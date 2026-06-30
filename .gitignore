@@ -1,8 +1,25 @@
+# Virtual environment
 venv/
 ml-service/venv/
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
+
+# Node modules
+node_modules/
+backend/node_modules/
+
+# VS Code settings
 .vscode/
+
+# Environment variables
 .env
+
+# System files
+.DS_Store
 Thumbs.db
+
+# Uploads folder
+backend/uploads/
