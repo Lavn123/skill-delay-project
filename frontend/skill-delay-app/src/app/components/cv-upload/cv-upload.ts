@@ -71,13 +71,26 @@ export class CvUploadComponent {
     this.loading = true;
     this.error = '';
 
-    this.apiService.matchJobs(this.cvText, this.githubUsername).subscribe({
-      next: (result: any) => {
+    // First parse CV to get skill profile
+    this.apiService.parseCV(this.cvText).subscribe({
+      next: (parseResult: any) => {
+        const skillProfile = parseResult.data?.skill_profile;
         localStorage.setItem('cvText', this.cvText);
         localStorage.setItem('githubUsername', this.githubUsername);
-        localStorage.setItem('jobMatches', JSON.stringify(result));
-        this.loading = false;
-        this.router.navigate(['/jobs']);
+        localStorage.setItem('skillProfile', JSON.stringify(skillProfile));
+
+        // Then get job matches
+        this.apiService.matchJobs(this.cvText, this.githubUsername).subscribe({
+          next: (matchResult: any) => {
+            localStorage.setItem('jobMatches', JSON.stringify(matchResult));
+            this.loading = false;
+            this.router.navigate(['/jobs']);
+          },
+          error: (err: any) => {
+            this.error = 'Error getting job matches!';
+            this.loading = false;
+          }
+        });
       },
       error: (err: any) => {
         this.error = 'Error connecting to server. Make sure backend is running!';

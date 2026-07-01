@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
 });
 
 // Route 1 - Parse CV and get skill profile
-app.post('/api/parse-cv', upload.single('cv'), async (req, res) => {
+app.post('/api/parse-cv', async (req, res) => {
     try {
         const cvText = req.body.cv_text;
         
