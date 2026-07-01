@@ -6,16 +6,13 @@ from decay_model import apply_decay_to_profile
 from job_matcher import match_candidate_to_jobs
 from github_signal import extract_github_signals, combine_signals
 from evaluation import system_a_static, system_b_cv_decay, system_c_multi_source
+from database import save_cv_analysis, save_job_matches
 
 app = FastAPI(
     title="Skill Decay API",
     description="Multi-source temporal skill decay model",
     version="1.0.0"
 )
-
-# ================================================
-# REQUEST MODELS
-# ================================================
 
 class CVRequest(BaseModel):
     cv_text: str
@@ -31,10 +28,6 @@ class EvaluateRequest(BaseModel):
     cv_text: str
     github_username: Optional[str] = None
 
-# ================================================
-# ROUTES
-# ================================================
-
 @app.get("/")
 def root():
     return {
@@ -46,7 +39,16 @@ def root():
 def parse_cv_route(request: CVRequest):
     parsed = parse_cv(request.cv_text)
     profile = apply_decay_to_profile(parsed['skill_timeline'])
+    
+    # Save to MongoDB
+    analysis_id = save_cv_analysis(
+        cv_text=request.cv_text,
+        skill_timeline=parsed['skill_timeline'],
+        skill_profile={k: v for k, v in profile.items()}
+    )
+    
     return {
+        "analysis_id": analysis_id,
         "total_skills": parsed['skills_found'],
         "skill_timeline": parsed['skill_timeline'],
         "skill_profile": profile
@@ -61,7 +63,7 @@ def match_jobs_route(request: MatchRequest):
         },
         {
             "title": "Full Stack Developer",
-            "description": "Angular, Node.js, MongoDB, JavaScript required"
+            "description": "Angular, Node.js, MongoDB, JavaScript, TypeScript required"
         },
         {
             "title": "Backend Developer",
@@ -76,7 +78,16 @@ def match_jobs_route(request: MatchRequest):
             "description": "Python, Machine Learning, PyTorch, SQL required"
         }
     ]
+
     results = match_candidate_to_jobs(request.cv_text, job_descriptions)
+    
+    # Save to MongoDB
+    save_job_matches(
+        cv_analysis_id="direct",
+        matches=results,
+        github_username=request.github_username
+    )
+    
     return {"matches": results}
 
 @app.post("/github-signal")
