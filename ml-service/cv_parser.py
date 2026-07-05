@@ -5,11 +5,46 @@ from datetime import datetime
 nlp = spacy.load("en_core_web_sm")
 
 SKILLS = [
-    "angular", "react", "vue", "javascript", "typescript", "html", "css",
-    "node.js", "express", "python", "java", "django", "flask", "fastapi",
+    # Frontend
+    "angular", "react", "vue", "javascript", "typescript", 
+    "html", "css", "jquery", "bootstrap", "sass",
+    "webpack", "redux", "next.js", "gatsby",
+
+    # Backend
+    "node.js", "express", "python", "java", "django", 
+    "flask", "fastapi", "spring", "php", "ruby",
+    "rails", "asp.net", "c#", "golang", "rust",
+    "kotlin", "scala", "perl",
+
+    # Database
     "mongodb", "mysql", "postgresql", "sql", "firebase",
-    "tensorflow", "pytorch", "scikit-learn", "keras", "nlp", "machine learning",
-    "docker", "git", "aws", "azure", "linux"
+    "redis", "elasticsearch", "cassandra", "oracle",
+    "sqlite", "dynamodb", "mariadb",
+
+    # AI/ML
+    "tensorflow", "pytorch", "scikit-learn", "keras", 
+    "nlp", "machine learning", "deep learning",
+    "computer vision", "pandas", "numpy", "matplotlib",
+    "opencv", "huggingface", "transformers", "spark",
+    "hadoop", "tableau", "power bi",
+
+    # DevOps/Cloud
+    "docker", "kubernetes", "git", "aws", "azure",
+    "linux", "jenkins", "ci/cd", "terraform", "ansible",
+    "google cloud", "heroku", "nginx", "apache",
+
+    # Mobile
+    "android", "ios", "react native", "flutter", "swift",
+    "objective-c",
+
+    # Security/Networking
+    "cybersecurity", "networking", "tcp/ip", "firewalls",
+    "penetration testing", "ethical hacking",
+
+    # General IT
+    "agile", "scrum", "jira", "rest api", "graphql",
+    "microservices", "object oriented", "data structures",
+    "algorithms", "system design", "linux administration"
 ]
 
 YEAR_PATTERN = re.compile(r'\b(20[0-9]{2})\b')

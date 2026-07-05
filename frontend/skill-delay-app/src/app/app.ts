@@ -12,6 +12,7 @@ import { RouterOutlet, RouterLink } from '@angular/router';
       </span>
       <a routerLink="/" style="color:white; text-decoration:none;">Home</a>
       <a routerLink="/upload" style="color:white; text-decoration:none;">Upload CV</a>
+      <a routerLink="/dashboard" style="color:white; text-decoration:none;">Dashboard</a>
       <a routerLink="/jobs" style="color:white; text-decoration:none;">Job Matches</a>
     </nav>
     <router-outlet />

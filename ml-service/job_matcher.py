@@ -3,21 +3,85 @@ from pipeline import run_pipeline
 def extract_required_skills(job_description):
     """
     Extract required skills from a job description
+    Uses expanded keyword matching for real world job postings
     """
     SKILLS = [
-        "angular", "react", "vue", "javascript", "typescript", "html", "css",
-        "node.js", "express", "python", "java", "django", "flask", "fastapi",
+        # Frontend
+        "angular", "react", "vue", "javascript", "typescript",
+        "html", "css", "jquery", "bootstrap", "sass",
+        "webpack", "redux", "next.js", "gatsby",
+
+        # Backend
+        "node.js", "express", "python", "java", "django",
+        "flask", "fastapi", "spring", "php", "ruby",
+        "rails", "asp.net", "c#", "golang", "rust",
+        "kotlin", "scala", "perl",
+
+        # Database
         "mongodb", "mysql", "postgresql", "sql", "firebase",
-        "tensorflow", "pytorch", "scikit-learn", "keras", "nlp", "machine learning",
-        "docker", "git", "aws", "azure", "linux"
+        "redis", "elasticsearch", "cassandra", "oracle",
+        "sqlite", "dynamodb", "mariadb",
+
+        # AI/ML
+        "tensorflow", "pytorch", "scikit-learn", "keras",
+        "nlp", "machine learning", "deep learning",
+        "computer vision", "pandas", "numpy", "matplotlib",
+        "opencv", "spark", "hadoop", "tableau", "power bi",
+
+        # DevOps/Cloud
+        "docker", "kubernetes", "git", "aws", "azure",
+        "linux", "jenkins", "terraform", "ansible",
+        "google cloud", "heroku", "nginx", "apache",
+
+        # Mobile
+        "android", "ios", "react native", "flutter", "swift",
+
+        # General IT
+        "agile", "scrum", "jira", "rest api", "graphql",
+        "microservices", "object oriented", "data structures",
+        "algorithms", "system design", "linux administration",
+        "networking", "cybersecurity", "penetration testing"
     ]
-    
+
+    SKILL_VARIATIONS = {
+        "js": "javascript",
+        "ts": "typescript",
+        "py": "python",
+        "node": "node.js",
+        "mongo": "mongodb",
+        "postgres": "postgresql",
+        "k8s": "kubernetes",
+        "ml": "machine learning",
+        "ai": "machine learning",
+        "gcp": "google cloud",
+        "ec2": "aws",
+        "s3": "aws",
+        "devops": "docker",
+        "big data": "spark",
+        "data science": "machine learning",
+        "data analytics": "sql",
+        "full stack": "javascript",
+        "fullstack": "javascript",
+        "front end": "javascript",
+        "frontend": "javascript",
+        "backend": "python"
+    }
+
     job_lower = job_description.lower()
     required = []
+
+    # Check exact skill matches
     for skill in SKILLS:
-        if skill in job_lower:
+        if skill.lower() in job_lower:
             required.append(skill)
-    return required
+
+    # Check variations
+    for variation, skill in SKILL_VARIATIONS.items():
+        if variation in job_lower and skill not in required:
+            required.append(skill)
+
+    return list(set(required))
+
 
 def calculate_match_score(skill_profile, required_skills):
     """
@@ -25,8 +89,14 @@ def calculate_match_score(skill_profile, required_skills):
     Uses decay scores instead of binary matching
     """
     if not required_skills:
-        return 0
-    
+        return {
+            "match_percentage": 0,
+            "matched_skills": [],
+            "missing_skills": [],
+            "total_required": 0,
+            "total_matched": 0
+        }
+
     total_score = 0
     matched_skills = []
     missing_skills = []
@@ -56,10 +126,11 @@ def calculate_match_score(skill_profile, required_skills):
         "total_matched": len(matched_skills)
     }
 
+
 def match_candidate_to_jobs(cv_text, job_descriptions):
     """
     Match one candidate against multiple job descriptions
-    Returns ranked list of jobs
+    Returns ranked list of top 10 jobs
     """
     # Get candidate skill profile
     candidate_profile = run_pipeline(cv_text)
@@ -68,9 +139,23 @@ def match_candidate_to_jobs(cv_text, job_descriptions):
     results = []
 
     for job in job_descriptions:
+        # Get required skills
         required_skills = extract_required_skills(job['description'])
+
+        # Skip jobs with no extractable skills
+        if not required_skills:
+            continue
+
         match = calculate_match_score(skill_profile, required_skills)
-        
+
+        # Skip if match returned invalid result
+        if not isinstance(match, dict):
+            continue
+
+        # Only include jobs with some match
+        if match['match_percentage'] == 0:
+            continue
+
         results.append({
             "job_title": job['title'],
             "match_percentage": match['match_percentage'],
@@ -80,16 +165,20 @@ def match_candidate_to_jobs(cv_text, job_descriptions):
             "total_matched": match['total_matched']
         })
 
-    # Rank jobs by match percentage
-    results = sorted(results, 
-                    key=lambda x: x['match_percentage'], 
-                    reverse=True)
-    return results
+    # Rank by match percentage
+    results = sorted(
+        results,
+        key=lambda x: x['match_percentage'],
+        reverse=True
+    )
+
+    # Return top 10 only
+    return results[:10]
+
 
 # ---- TEST IT ----
 if __name__ == "__main__":
 
-    # Sample candidate CV
     sample_cv = """
     John Smith - Software Engineer
 
@@ -106,29 +195,28 @@ if __name__ == "__main__":
     Built websites for clients
     """
 
-    # Sample job descriptions
     job_descriptions = [
         {
             "title": "ML Engineer",
-            "description": "Looking for Python developer with Machine Learning, TensorFlow and MongoDB experience. NLP knowledge is a plus."
+            "description": "Python, Machine Learning, TensorFlow, MongoDB, NLP required"
         },
         {
             "title": "Full Stack Developer",
-            "description": "We need Angular, Node.js and MongoDB developer with JavaScript experience."
+            "description": "Angular, Node.js, MongoDB, JavaScript required"
         },
         {
             "title": "Backend Developer",
-            "description": "Python, FastAPI, PostgreSQL and Docker experience required."
+            "description": "Python, FastAPI, PostgreSQL, Docker required"
         },
         {
             "title": "Frontend Developer",
-            "description": "React, JavaScript, HTML, CSS and TypeScript required."
+            "description": "React, JavaScript, HTML, CSS, TypeScript required"
         }
     ]
 
     print("Matching candidate to jobs...")
     print()
-    
+
     results = match_candidate_to_jobs(sample_cv, job_descriptions)
 
     print("=" * 65)
@@ -139,12 +227,11 @@ if __name__ == "__main__":
         print(f"\n#{i} {job['job_title']}")
         print(f"    Match Score: {job['match_percentage']}%")
         print(f"    Matched: {job['total_matched']}/{job['total_required']} skills")
-        
+
         if job['matched_skills']:
-            print(f"    ✅ Strong matches:", end=" ")
-            strong = [s['skill'] for s in job['matched_skills'] 
+            strong = [s['skill'] for s in job['matched_skills']
                      if s['strength'] in ['Strong', 'Moderate']]
-            print(', '.join(strong) if strong else 'None')
-        
+            print(f"    ✅ Matched: {', '.join(strong) if strong else 'None'}")
+
         if job['missing_skills']:
             print(f"    ❌ Missing: {', '.join(job['missing_skills'])}")
