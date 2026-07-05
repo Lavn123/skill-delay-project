@@ -10,7 +10,7 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "skill_decay_db")
 
 client = MongoClient(MONGODB_URI)
 db = client[DATABASE_NAME]
-
+users = db["users"]
 cv_analyses = db["cv_analyses"]
 job_matches = db["job_matches"]
 evaluations = db["evaluations"]

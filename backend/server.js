@@ -3,11 +3,16 @@ const cors = require('cors');
 const axios = require('axios');
 const multer = require('multer');
 const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const FormData = require('form-data');
+const fs = require('fs');
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const JWT_SECRET = 'skilltempus_secret_key_2026';
 
 // Middleware
 app.use(cors());
@@ -17,108 +22,209 @@ app.use(express.json());
 const upload = multer({ dest: 'uploads/' });
 
 // ================================================
-// ROUTES
+// BASIC ROUTES
 // ================================================
 
-// Test route - check server is running
 app.get('/', (req, res) => {
-    res.json({ 
-        message: 'Skill Decay API is running!',
+    res.json({
+        message: 'SkillTempus API is running!',
         version: '1.0.0'
     });
 });
 
-// Route 1 - Parse CV and get skill profile
 app.post('/api/parse-cv', async (req, res) => {
     try {
         const cvText = req.body.cv_text;
-        
-        // Call Python ML service
         const response = await axios.post('http://localhost:8000/parse-cv', {
             cv_text: cvText
         });
-        
-        res.json({
-            success: true,
-            data: response.data
-        });
+        res.json({ success: true, data: response.data });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Route 2 - Get job matches
 app.post('/api/match-jobs', async (req, res) => {
     try {
         const { cv_text, github_username } = req.body;
-        
-        // Call Python ML service
         const response = await axios.post('http://localhost:8000/match-jobs', {
             cv_text,
             github_username
         });
-        
-        res.json({
-            success: true,
-            data: response.data
-        });
+        res.json({ success: true, data: response.data });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Route 3 - Get GitHub signals
 app.post('/api/github-signal', async (req, res) => {
     try {
         const { github_username } = req.body;
-        
-        // Call Python ML service
         const response = await axios.post('http://localhost:8000/github-signal', {
             github_username
         });
-        
-        res.json({
-            success: true,
-            data: response.data
-        });
+        res.json({ success: true, data: response.data });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Route 4 - Run full evaluation
 app.post('/api/evaluate', async (req, res) => {
     try {
         const { cv_text, github_username } = req.body;
-        
-        // Call Python ML service
         const response = await axios.post('http://localhost:8000/evaluate', {
             cv_text,
             github_username
         });
-        
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ================================================
+// FILE UPLOAD ROUTE
+// ================================================
+
+app.post('/api/upload-cv-file', upload.single('file'), async (req, res) => {
+    try {
+        const form = new FormData();
+        form.append('file', fs.createReadStream(req.file.path), {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype
+        });
+        form.append('github_username', req.body.github_username || '');
+
+        const response = await axios.post(
+            'http://localhost:8000/upload-cv-file',
+            form,
+            { headers: form.getHeaders() }
+        );
+
+        fs.unlinkSync(req.file.path);
+
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ================================================
+// AUTH ROUTES
+// ================================================
+
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide name, email and password'
+            });
+        }
+
+        const response = await axios.post(
+            'http://localhost:8000/auth/register',
+            { name, email, password }
+        );
+
+        if (response.data.error) {
+            return res.status(400).json({
+                success: false,
+                error: response.data.error
+            });
+        }
+
+        const token = jwt.sign(
+            { userId: response.data.user_id, email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
         res.json({
             success: true,
-            data: response.data
+            token,
+            user: {
+                id: response.data.user_id,
+                name,
+                email
+            }
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide email and password'
+            });
+        }
+
+        const response = await axios.post(
+            'http://localhost:8000/auth/login',
+            { email, password }
+        );
+
+        if (response.data.error) {
+            return res.status(401).json({
+                success: false,
+                error: response.data.error
+            });
+        }
+
+        const token = jwt.sign(
+            { userId: response.data.user_id, email },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: response.data.user_id,
+                name: response.data.name,
+                email
+            }
         });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.get('/api/auth/me', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        res.json({
+            success: true,
+            user: {
+                id: decoded.userId,
+                email: decoded.email
+            }
+        });
+    } catch (error) {
+        res.status(401).json({ success: false, error: 'Invalid token' });
     }
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
+    console.log(`SkillTempus backend running on http://localhost:${PORT}`);
 });

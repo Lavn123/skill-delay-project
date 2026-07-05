@@ -36,4 +36,12 @@ export class SkillApiService {
       github_username: githubUsername
     });
   }
+
+  uploadCVFile(file: File, githubUsername: string): Observable<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('github_username', githubUsername);
+  
+  return this.http.post(`${this.apiUrl}/upload-cv-file`, formData);
+}
 }
