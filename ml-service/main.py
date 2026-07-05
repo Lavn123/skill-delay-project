@@ -9,7 +9,7 @@ from decay_model import apply_decay_to_profile
 from job_matcher import match_candidate_to_jobs, extract_required_skills, calculate_match_score
 from github_signal import extract_github_signals, combine_signals
 from evaluation import system_a_static, system_b_cv_decay, system_c_multi_source
-from database import save_cv_analysis, save_job_matches, db
+from database import save_cv_analysis, save_job_matches, db, save_user_analysis, get_user_history
 from file_reader import extract_text_from_file
 
 app = FastAPI(
@@ -28,6 +28,7 @@ class CVRequest(BaseModel):
 class MatchRequest(BaseModel):
     cv_text: str
     github_username: Optional[str] = None
+    user_id: Optional[str] = None
 
 class GithubRequest(BaseModel):
     github_username: str
@@ -146,6 +147,52 @@ def match_jobs_route(request: MatchRequest):
         github_username=request.github_username
     )
 
+    # Debug
+    print(f"user_id received: '{request.user_id}'")
+
+    # Save to user history if user_id provided
+    if request.user_id:
+        try:
+            parsed = parse_cv(request.cv_text)
+            profile = apply_decay_to_profile(parsed['skill_timeline'])
+            save_user_analysis(
+                user_id=request.user_id,
+                cv_text=request.cv_text,
+                skill_timeline=parsed['skill_timeline'],
+                skill_profile={k: v for k, v in profile.items()},
+                matches=results
+            )
+            print(f"Saved history for user: {request.user_id}")
+        except Exception as e:
+            print(f"Could not save user history: {e}")
+
+    return {"matches": results}
+
+def match_jobs_route(request: MatchRequest):
+    job_descriptions = REAL_JOBS if REAL_JOBS else []
+    results = match_candidate_to_jobs(request.cv_text, job_descriptions)
+
+    save_job_matches(
+        cv_analysis_id="web_app",
+        matches=results,
+        github_username=request.github_username
+    )
+
+    # Save to user history if user_id provided
+    if request.user_id:
+        try:
+            parsed = parse_cv(request.cv_text)
+            profile = apply_decay_to_profile(parsed['skill_timeline'])
+            save_user_analysis(
+                user_id=request.user_id,
+                cv_text=request.cv_text,
+                skill_timeline=parsed['skill_timeline'],
+                skill_profile={k: v for k, v in profile.items()},
+                matches=results
+            )
+        except Exception as e:
+            print(f"Could not save user history: {e}")
+
     return {"matches": results}
 
 @app.post("/github-signal")
@@ -209,7 +256,8 @@ def get_jobs():
 @app.post("/upload-cv-file")
 async def upload_cv_file(
     file: UploadFile = File(...),
-    github_username: str = Form(default="")
+    github_username: str = Form(default=""),
+    user_id: str = Form(default="")
 ):
     try:
         filename = file.filename.lower()
@@ -249,6 +297,19 @@ async def upload_cv_file(
             matches=results,
             github_username=github_username
         )
+
+        # Save to user history if user_id provided
+        if user_id:
+            try:
+                save_user_analysis(
+                    user_id=user_id,
+                    cv_text=cv_text,
+                    skill_timeline=parsed['skill_timeline'],
+                    skill_profile={k: v for k, v in profile.items()},
+                    matches=results
+                )
+            except Exception as e:
+                print(f"Could not save user history: {e}")
 
         return {
             "cv_text": cv_text[:500],
@@ -306,6 +367,22 @@ def login(request: LoginRequest):
             "user_id": str(user["_id"]),
             "name": user["name"],
             "message": "Login successful"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# ================================================
+# USER HISTORY ROUTES
+# ================================================
+
+@app.get("/user/history/{user_id}")
+def get_history(user_id: str):
+    try:
+        history = get_user_history(user_id)
+        return {
+            "user_id": user_id,
+            "total_analyses": len(history),
+            "history": history
         }
     except Exception as e:
         return {"error": str(e)}

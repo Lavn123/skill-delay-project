@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { SkillApiService } from '../../services/skill-api';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-cv-upload',
@@ -26,14 +27,16 @@ import { SkillApiService } from '../../services/skill-api';
           <!-- Upload Method Toggle -->
           <div style="display:flex; gap:10px; margin-bottom:24px;">
             <button (click)="uploadMode='file'"
-                    [style.background]="uploadMode==='file' ? 'linear-gradient(135deg, #2E75B6, #1F3864)' : '#f0f4ff'"
+                    [style.background]="uploadMode==='file' ? 
+                      'linear-gradient(135deg, #2E75B6, #1F3864)' : '#f0f4ff'"
                     [style.color]="uploadMode==='file' ? 'white' : '#2E75B6'"
                     style="flex:1; padding:10px; border:none; border-radius:8px; 
                            cursor:pointer; font-size:14px; font-weight:600;">
               📁 Upload File
             </button>
             <button (click)="uploadMode='text'"
-                    [style.background]="uploadMode==='text' ? 'linear-gradient(135deg, #2E75B6, #1F3864)' : '#f0f4ff'"
+                    [style.background]="uploadMode==='text' ? 
+                      'linear-gradient(135deg, #2E75B6, #1F3864)' : '#f0f4ff'"
                     [style.color]="uploadMode==='text' ? 'white' : '#2E75B6'"
                     style="flex:1; padding:10px; border:none; border-radius:8px; 
                            cursor:pointer; font-size:14px; font-weight:600;">
@@ -63,7 +66,7 @@ import { SkillApiService } from '../../services/skill-api';
                   Drop your CV here or click to browse
                 </p>
                 <p style="color:#999; font-size:13px; margin:0;">
-                  Supports PDF and DOCX files
+                  Supports PDF and DOCX files (max 5MB)
                 </p>
               </div>
 
@@ -123,6 +126,9 @@ Angular, Node.js, JavaScript, MongoDB">
                        font-size:14px; outline:none; box-sizing:border-box;"
                 placeholder="your-username" />
             </div>
+            <p style="color:#999; font-size:13px; margin-top:6px;">
+              Adding GitHub improves accuracy by detecting skills used in personal projects
+            </p>
           </div>
 
           <!-- Submit Button -->
@@ -143,6 +149,20 @@ Angular, Node.js, JavaScript, MongoDB">
           </div>
 
         </div>
+
+        <!-- Tips -->
+        <div style="margin-top:24px; background:white; border-radius:16px; 
+                    padding:24px 30px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+          <h4 style="color:#1F3864; margin:0 0 12px;">💡 Tips for best results</h4>
+          <ul style="color:#666; font-size:14px; line-height:1.8; 
+                     margin:0; padding-left:20px;">
+            <li>Include dates for each job role (e.g. 2020 - 2022)</li>
+            <li>List the technologies you used in each role</li>
+            <li>The more detail you provide, the better the analysis</li>
+            <li>Sign in to save your analysis history</li>
+          </ul>
+        </div>
+
       </div>
     </div>
   `
@@ -158,6 +178,7 @@ export class CvUploadComponent {
 
   constructor(
     private apiService: SkillApiService,
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -195,18 +216,13 @@ export class CvUploadComponent {
         return;
       }
 
-      // Check file type
-      const allowedTypes = ['.pdf', '.docx'];
       const fileName = this.selectedFile.name.toLowerCase();
-      const isValidType = allowedTypes.some(t => fileName.endsWith(t));
-      if (!isValidType) {
+      if (!fileName.endsWith('.pdf') && !fileName.endsWith('.docx')) {
         this.error = 'Only PDF and DOCX files are supported!';
         return;
       }
 
-      // Check file size (max 5MB)
-      const maxSize = 5 * 1024 * 1024;
-      if (this.selectedFile.size > maxSize) {
+      if (this.selectedFile.size > 5 * 1024 * 1024) {
         this.error = 'File is too large. Maximum size is 5MB!';
         return;
       }
@@ -218,7 +234,6 @@ export class CvUploadComponent {
         return;
       }
 
-      // Check minimum length
       if (this.cvText.trim().length < 100) {
         this.error = 'CV text is too short. Please paste your full CV!';
         return;
@@ -228,40 +243,47 @@ export class CvUploadComponent {
     }
   }
 
+ getUserId(): string {
+    const user = this.authService.getUser();
+    console.log('Current user:', user);
+    return user?.id || user?._id || '';
+}
+
   analyseFile() {
     this.loading = true;
+    const userId = this.getUserId();
 
     this.apiService.uploadCVFile(
       this.selectedFile!,
-      this.githubUsername
+      this.githubUsername,
+      userId
     ).subscribe({
       next: (result: any) => {
         if (result.data?.error) {
-          this.error = `Error: ${result.data.error}`;
+          this.error = result.data.error;
           this.loading = false;
           return;
         }
 
         const data = result.data;
 
-        if (!data.skill_profile || 
+        if (!data.skill_profile ||
             Object.keys(data.skill_profile).length === 0) {
-          this.error = 'No skills found in your CV. Try adding more technical details!';
+          this.error = 'No skills found in your CV!';
           this.loading = false;
           return;
         }
 
         if (!data.matches || data.matches.length === 0) {
-          this.error = 'No job matches found. Try adding more skills to your CV!';
+          this.error = 'No job matches found!';
           this.loading = false;
           return;
         }
 
         localStorage.setItem('cvText', data.cv_text || '');
         localStorage.setItem('githubUsername', this.githubUsername);
-        localStorage.setItem('skillProfile', 
-          JSON.stringify(data.skill_profile));
-        localStorage.setItem('jobMatches', 
+        localStorage.setItem('skillProfile', JSON.stringify(data.skill_profile));
+        localStorage.setItem('jobMatches',
           JSON.stringify({ data: { matches: data.matches } }));
         this.loading = false;
         this.router.navigate(['/jobs']);
@@ -269,8 +291,6 @@ export class CvUploadComponent {
       error: (err: any) => {
         if (err.status === 0) {
           this.error = 'Cannot connect to server. Make sure all services are running!';
-        } else if (err.status === 500) {
-          this.error = 'Server error. Please try again!';
         } else {
           this.error = 'Error uploading file. Please try again!';
         }
@@ -281,13 +301,14 @@ export class CvUploadComponent {
 
   analyseText() {
     this.loading = true;
+    const userId = this.getUserId();
 
     this.apiService.parseCV(this.cvText).subscribe({
       next: (parseResult: any) => {
         const skillProfile = parseResult.data?.skill_profile;
 
         if (!skillProfile || Object.keys(skillProfile).length === 0) {
-          this.error = 'No skills found in your CV. Try adding more technical details!';
+          this.error = 'No skills found in your CV!';
           this.loading = false;
           return;
         }
@@ -296,13 +317,17 @@ export class CvUploadComponent {
         localStorage.setItem('githubUsername', this.githubUsername);
         localStorage.setItem('skillProfile', JSON.stringify(skillProfile));
 
-        this.apiService.matchJobs(this.cvText, this.githubUsername).subscribe({
+        this.apiService.matchJobs(
+          this.cvText,
+          this.githubUsername,
+          userId
+        ).subscribe({
           next: (matchResult: any) => {
-            const matches = matchResult?.data?.matches || 
+            const matches = matchResult?.data?.matches ||
                            matchResult?.matches || [];
 
             if (matches.length === 0) {
-              this.error = 'No job matches found. Try adding more skills!';
+              this.error = 'No job matches found!';
               this.loading = false;
               return;
             }
@@ -312,18 +337,14 @@ export class CvUploadComponent {
             this.router.navigate(['/jobs']);
           },
           error: (err: any) => {
-            if (err.status === 0) {
-              this.error = 'Cannot connect to server!';
-            } else {
-              this.error = 'Error getting job matches. Please try again!';
-            }
+            this.error = 'Error getting job matches!';
             this.loading = false;
           }
         });
       },
       error: (err: any) => {
         if (err.status === 0) {
-          this.error = 'Cannot connect to server. Make sure backend is running!';
+          this.error = 'Cannot connect to server!';
         } else {
           this.error = 'Error analysing CV. Please try again!';
         }

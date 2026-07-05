@@ -46,11 +46,14 @@ app.post('/api/parse-cv', async (req, res) => {
 
 app.post('/api/match-jobs', async (req, res) => {
     try {
-        const { cv_text, github_username } = req.body;
+        const { cv_text, github_username, user_id } = req.body;
+        
         const response = await axios.post('http://localhost:8000/match-jobs', {
             cv_text,
-            github_username
+            github_username,
+            user_id: user_id || ''
         });
+        
         res.json({ success: true, data: response.data });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -88,12 +91,16 @@ app.post('/api/evaluate', async (req, res) => {
 
 app.post('/api/upload-cv-file', upload.single('file'), async (req, res) => {
     try {
+        const FormData = require('form-data');
+        const fs = require('fs');
+
         const form = new FormData();
         form.append('file', fs.createReadStream(req.file.path), {
             filename: req.file.originalname,
             contentType: req.file.mimetype
         });
         form.append('github_username', req.body.github_username || '');
+        form.append('user_id', req.body.user_id || '');  // ← add this
 
         const response = await axios.post(
             'http://localhost:8000/upload-cv-file',
@@ -221,6 +228,36 @@ app.get('/api/auth/me', async (req, res) => {
         });
     } catch (error) {
         res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+});
+
+app.get('/api/user/history', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'Not logged in'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const userId = decoded.userId;
+
+        const response = await axios.get(
+            `http://localhost:8000/user/history/${userId}`
+        );
+
+        res.json({ 
+            success: true, 
+            data: response.data 
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 

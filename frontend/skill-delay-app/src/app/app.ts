@@ -37,11 +37,15 @@ import { Router } from '@angular/router';
                 font-size:15px; padding:6px 14px; border-radius:20px;">
         Job Matches
       </a>
+      <a routerLink="/history" routerLinkActive="active-link"
+         *ngIf="isLoggedIn()"
+         style="color:rgba(255,255,255,0.8); text-decoration:none;
+                font-size:15px; padding:6px 14px; border-radius:20px;">
+        History
+      </a>
 
-      <!-- Spacer -->
       <span style="flex:1"></span>
 
-      <!-- Not logged in -->
       <div *ngIf="!isLoggedIn()">
         <a routerLink="/login"
            style="color:rgba(255,255,255,0.8); text-decoration:none;
@@ -57,8 +61,8 @@ import { Router } from '@angular/router';
         </a>
       </div>
 
-      <!-- Logged in -->
-      <div *ngIf="isLoggedIn()" style="display:flex; align-items:center; gap:12px;">
+      <div *ngIf="isLoggedIn()"
+           style="display:flex; align-items:center; gap:12px;">
         <span style="color:white; font-size:14px;">
           👋 {{ getUser()?.name }}
         </span>

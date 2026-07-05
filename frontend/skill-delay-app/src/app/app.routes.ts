@@ -5,12 +5,17 @@ import { SkillDashboardComponent } from './components/skill-dashboard/skill-dash
 import { JobMatchesComponent } from './components/job-matches/job-matches';
 import { LoginComponent } from './components/login/login';
 import { RegisterComponent } from './components/register/register';
+import { HistoryComponent } from './components/history/history';
+import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'upload', component: CvUploadComponent },
-  { path: 'dashboard', component: SkillDashboardComponent },
-  { path: 'jobs', component: JobMatchesComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent }
+  { path: 'register', component: RegisterComponent },
+
+  // Protected routes — require login
+  { path: 'upload', component: CvUploadComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: SkillDashboardComponent, canActivate: [authGuard] },
+  { path: 'jobs', component: JobMatchesComponent, canActivate: [authGuard] },
+  { path: 'history', component: HistoryComponent, canActivate: [authGuard] }
 ];

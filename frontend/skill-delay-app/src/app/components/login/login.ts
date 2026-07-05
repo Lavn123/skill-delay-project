@@ -3,18 +3,22 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth';
+import {  ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #f5f7fa, #e8f0fe);
-                display:flex; align-items:center; justify-content:center; padding:20px;">
-      <div style="background:white; border-radius:16px; padding:40px;
+    <div
+      style="min-height:100vh; background:linear-gradient(135deg, #f5f7fa, #e8f0fe);
+                display:flex; align-items:center; justify-content:center; padding:20px;"
+    >
+      <div
+        style="background:white; border-radius:16px; padding:40px;
                   width:100%; max-width:420px;
-                  box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-
+                  box-shadow:0 4px 20px rgba(0,0,0,0.08);"
+      >
         <div style="text-align:center; margin-bottom:30px;">
           <div style="font-size:40px; margin-bottom:10px;">⏳</div>
           <h2 style="color:#1F3864; margin:0 0 8px;">Welcome Back</h2>
@@ -22,51 +26,69 @@ import { AuthService } from '../../services/auth';
         </div>
 
         <div style="margin-bottom:20px;">
-          <label style="display:block; margin-bottom:6px; font-weight:600;
-                        color:#1F3864; font-size:14px;">Email</label>
-          <input [(ngModel)]="email" type="email"
-                 style="width:100%; padding:12px 14px; border:2px solid #e0e0e0;
+          <label
+            style="display:block; margin-bottom:6px; font-weight:600;
+                        color:#1F3864; font-size:14px;"
+            >Email</label
+          >
+          <input
+            [(ngModel)]="email"
+            type="email"
+            style="width:100%; padding:12px 14px; border:2px solid #e0e0e0;
                         border-radius:10px; font-size:14px; outline:none;
                         box-sizing:border-box;"
-                 placeholder="your@email.com" />
+            placeholder="your@email.com"
+          />
         </div>
 
         <div style="margin-bottom:24px;">
-          <label style="display:block; margin-bottom:6px; font-weight:600;
-                        color:#1F3864; font-size:14px;">Password</label>
-          <input [(ngModel)]="password" type="password"
-                 style="width:100%; padding:12px 14px; border:2px solid #e0e0e0;
+          <label
+            style="display:block; margin-bottom:6px; font-weight:600;
+                        color:#1F3864; font-size:14px;"
+            >Password</label
+          >
+          <input
+            [(ngModel)]="password"
+            type="password"
+            style="width:100%; padding:12px 14px; border:2px solid #e0e0e0;
                         border-radius:10px; font-size:14px; outline:none;
                         box-sizing:border-box;"
-                 placeholder="••••••••" />
+            placeholder="••••••••"
+          />
         </div>
 
-        <button (click)="login()"
-                [disabled]="loading"
-                style="width:100%; background:linear-gradient(135deg, #2E75B6, #1F3864);
+        <button
+          (click)="login()"
+          [disabled]="loading"
+          style="width:100%; background:linear-gradient(135deg, #2E75B6, #1F3864);
                        color:white; padding:14px; font-size:16px; border:none;
                        border-radius:10px; cursor:pointer; font-weight:600;"
-                [style.opacity]="loading ? '0.7' : '1'">
+          [style.opacity]="loading ? '0.7' : '1'"
+        >
           {{ loading ? 'Signing in...' : 'Sign In →' }}
         </button>
 
-        <div *ngIf="error"
-             style="margin-top:15px; padding:12px; background:#fee;
-                    border-radius:8px; color:#c00; font-size:14px; text-align:center;">
+        <div
+          *ngIf="error"
+          style="margin-top:15px; padding:12px; background:#fee;
+                    border-radius:8px; color:#c00; font-size:14px; text-align:center;"
+        >
           ⚠️ {{ error }}
         </div>
 
         <p style="text-align:center; margin-top:20px; color:#777; font-size:14px;">
           Don't have an account?
-          <a routerLink="/register" style="color:#2E75B6; font-weight:600;
-                                           text-decoration:none;">
+          <a
+            routerLink="/register"
+            style="color:#2E75B6; font-weight:600;
+                                           text-decoration:none;"
+          >
             Sign Up
           </a>
         </p>
-
       </div>
     </div>
-  `
+  `,
 })
 export class LoginComponent {
   email = '';
@@ -76,7 +98,8 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   login() {
@@ -93,7 +116,10 @@ export class LoginComponent {
         if (result.success) {
           this.authService.saveToken(result.token, result.user);
           this.loading = false;
-          this.router.navigate(['/upload']);
+
+          // Redirect to original page or upload
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/upload';
+          this.router.navigate([returnUrl]);
         } else {
           this.error = result.error || 'Login failed!';
           this.loading = false;
@@ -102,7 +128,7 @@ export class LoginComponent {
       error: (err: any) => {
         this.error = 'Cannot connect to server!';
         this.loading = false;
-      }
+      },
     });
   }
 }

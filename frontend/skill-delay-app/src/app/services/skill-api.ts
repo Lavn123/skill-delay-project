@@ -17,10 +17,11 @@ export class SkillApiService {
     });
   }
 
-  matchJobs(cvText: string, githubUsername: string): Observable<any> {
+  matchJobs(cvText: string, githubUsername: string, userId: string = ''): Observable<any> {
     return this.http.post(`${this.apiUrl}/match-jobs`, {
       cv_text: cvText,
-      github_username: githubUsername
+      github_username: githubUsername,
+      user_id: userId
     });
   }
 
@@ -37,11 +38,17 @@ export class SkillApiService {
     });
   }
 
-  uploadCVFile(file: File, githubUsername: string): Observable<any> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('github_username', githubUsername);
-  
-  return this.http.post(`${this.apiUrl}/upload-cv-file`, formData);
-}
+  uploadCVFile(file: File, githubUsername: string, userId: string = ''): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('github_username', githubUsername);
+    formData.append('user_id', userId);
+    return this.http.post(`${this.apiUrl}/upload-cv-file`, formData);
+  }
+
+  getUserHistory(): Observable<any> {
+    const token = localStorage.getItem('token');
+    const headers = { 'Authorization': `Bearer ${token}` };
+    return this.http.get(`${this.apiUrl}/user/history`, { headers });
+  }
 }

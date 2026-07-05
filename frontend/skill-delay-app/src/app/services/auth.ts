@@ -44,5 +44,9 @@ export class AuthService {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('cvText');
+    localStorage.removeItem('skillProfile');
+    localStorage.removeItem('jobMatches');
+    localStorage.removeItem('githubUsername');
   }
 }
