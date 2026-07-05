@@ -10,7 +10,7 @@ DATABASE_NAME = os.getenv("DATABASE_NAME", "skill_decay_db")
 
 client = MongoClient(MONGODB_URI)
 db = client[DATABASE_NAME]
-
+users = db["users"]
 cv_analyses = db["cv_analyses"]
 job_matches = db["job_matches"]
 evaluations = db["evaluations"]
@@ -85,3 +85,41 @@ if __name__ == "__main__":
     
     print()
     print("MongoDB integration working!")
+
+def save_user_analysis(user_id, cv_text, skill_timeline, skill_profile, matches):
+    """Save complete analysis linked to a specific user"""
+    document = {
+        "user_id": user_id,
+        "cv_text": cv_text[:500],
+        "skill_timeline": skill_timeline,
+        "skill_profile": skill_profile,
+        "matches": matches,
+        "total_skills": len(skill_timeline),
+        "top_match": matches[0]['job_title'] if matches else None,
+        "top_score": matches[0]['match_percentage'] if matches else 0,
+        "created_at": datetime.now()
+    }
+    result = db["user_analyses"].insert_one(document)
+    return str(result.inserted_id)
+
+def get_user_history(user_id, limit=10):
+    """Get analysis history for a specific user"""
+    results = db["user_analyses"].find(
+        {"user_id": user_id}
+    ).sort("created_at", -1).limit(limit)
+    
+    history = []
+    for r in results:
+        r["_id"] = str(r["_id"])
+        history.append(r)
+    return history
+    """Get analysis history for a specific user"""
+    results = db["user_analyses"].find(
+        {"user_id": user_id}
+    ).sort("created_at", -1).limit(limit)
+    
+    history = []
+    for r in results:
+        r["_id"] = str(r["_id"])
+        history.append(r)
+    return history    
