@@ -1,33 +1,34 @@
 import math
 from datetime import datetime
+from scipy import stats
 from decay_model import apply_decay_to_profile, calculate_freshness, get_skill_category
 from job_matcher import extract_required_skills, calculate_match_score
 
 # ================================================
-# STEP 1 — LOCK DOWN GROUND TRUTH RULES
-# These rules are fixed BEFORE any model tuning
-# Based on Stack Overflow Developer Survey 2024
+# GROUND TRUTH RULES
+# Fixed BEFORE model tuning — based on
+# Stack Overflow Developer Survey 2024
 # ================================================
 
 GROUND_TRUTH_RULES = {
-    "suitability_threshold": 0.3,    # Changed from 0.4
-    "skill_coverage_threshold": 0.5,  # Changed from 0.6
-    
+    "suitability_threshold": 0.3,
+    "skill_coverage_threshold": 0.5,
     "fresh": 2023,
     "moderate": 2021,
     "stale": 2019,
     "very_stale": 2017
 }
+
 # ================================================
-# STEP 2 — GENERATE SYNTHETIC CANDIDATES
-# Ground truth is BUILT IN by construction
+# SYNTHETIC CANDIDATES — 20 candidates
+# Ground truth built in by construction
 # ================================================
 
 SYNTHETIC_CANDIDATES = [
     {
         "id": "C001",
         "name": "Fresh ML Engineer",
-        "description": "Recently active in ML - should match ML roles well",
+        "description": "Recently active in ML",
         "skill_timeline": {
             "python": 2024,
             "tensorflow": 2024,
@@ -36,15 +37,15 @@ SYNTHETIC_CANDIDATES = [
             "nlp": 2024
         },
         "ground_truth": {
-            "ML Engineer": True,      # Should match
-            "Full Stack Developer": False,  # Should not match
-            "Frontend Developer": False     # Should not match
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
         }
     },
     {
-        "id": "C002", 
+        "id": "C002",
         "name": "Stale ML Engineer",
-        "description": "ML skills are old - should NOT match ML roles well",
+        "description": "ML skills from 7 years ago",
         "skill_timeline": {
             "python": 2017,
             "tensorflow": 2017,
@@ -53,7 +54,7 @@ SYNTHETIC_CANDIDATES = [
             "nlp": 2017
         },
         "ground_truth": {
-            "ML Engineer": False,     # Should NOT match (skills too old)
+            "ML Engineer": False,
             "Full Stack Developer": False,
             "Frontend Developer": False
         }
@@ -61,7 +62,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C003",
         "name": "Fresh Full Stack Developer",
-        "description": "Recently active in full stack - should match FS roles",
+        "description": "Recently active in full stack",
         "skill_timeline": {
             "angular": 2024,
             "node.js": 2024,
@@ -71,14 +72,14 @@ SYNTHETIC_CANDIDATES = [
         },
         "ground_truth": {
             "ML Engineer": False,
-            "Full Stack Developer": True,   # Should match
-            "Frontend Developer": True      # Should match
+            "Full Stack Developer": True,
+            "Frontend Developer": True
         }
     },
     {
         "id": "C004",
         "name": "Stale Full Stack Developer",
-        "description": "Full stack skills are old - should NOT match FS roles",
+        "description": "Full stack skills from 7 years ago",
         "skill_timeline": {
             "angular": 2017,
             "node.js": 2017,
@@ -88,47 +89,47 @@ SYNTHETIC_CANDIDATES = [
         },
         "ground_truth": {
             "ML Engineer": False,
-            "Full Stack Developer": False,  # Should NOT match
-            "Frontend Developer": False     # Should NOT match
+            "Full Stack Developer": False,
+            "Frontend Developer": False
         }
     },
     {
         "id": "C005",
         "name": "Mixed Skills Developer",
-        "description": "Fresh Python but stale Angular - tricky case",
+        "description": "Fresh Python but stale Angular",
         "skill_timeline": {
-            "python": 2024,      # Fresh
-            "machine learning": 2024,  # Fresh
-            "angular": 2017,     # Very stale
-            "node.js": 2017,     # Very stale
-            "javascript": 2017   # Very stale
+            "python": 2024,
+            "machine learning": 2024,
+            "angular": 2017,
+            "node.js": 2017,
+            "javascript": 2017
         },
         "ground_truth": {
-            "ML Engineer": True,        # Should match (fresh ML skills)
-            "Full Stack Developer": False,  # Should NOT match (stale FS skills)
-            "Frontend Developer": False     # Should NOT match
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
         }
     },
     {
         "id": "C006",
-        "name": "Career Switcher",
-        "description": "Was Full Stack, switched to ML - Angular decayed",
+        "name": "Career Switcher ML",
+        "description": "Was Full Stack, switched to ML",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
             "tensorflow": 2024,
-            "angular": 2020,     # Used before career switch
-            "javascript": 2020   # Used before career switch
+            "angular": 2020,
+            "javascript": 2020
         },
         "ground_truth": {
-            "ML Engineer": True,        # Should match
-            "Full Stack Developer": False,  # Angular too old now
+            "ML Engineer": True,
+            "Full Stack Developer": False,
             "Frontend Developer": False
         }
     },
     {
         "id": "C007",
-        "name": "Frontend Specialist",
+        "name": "Fresh Frontend Specialist",
         "description": "Strong fresh frontend skills",
         "skill_timeline": {
             "react": 2024,
@@ -140,13 +141,13 @@ SYNTHETIC_CANDIDATES = [
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
-            "Frontend Developer": True   # Should match
+            "Frontend Developer": True
         }
     },
     {
         "id": "C008",
-        "name": "Generalist Developer",
-        "description": "Average skills across all areas - moderate matches",
+        "name": "Generalist Developer 2022",
+        "description": "Average skills across all areas",
         "skill_timeline": {
             "python": 2022,
             "javascript": 2022,
@@ -155,15 +156,219 @@ SYNTHETIC_CANDIDATES = [
             "mongodb": 2022
         },
         "ground_truth": {
-            "ML Engineer": True,        # Moderate match
-            "Full Stack Developer": True,   # Moderate match
+            "ML Engineer": True,
+            "Full Stack Developer": True,
             "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C009",
+        "name": "Recently Upskilled Developer",
+        "description": "Was Java dev, recently learned Python ML",
+        "skill_timeline": {
+            "java": 2019,
+            "python": 2024,
+            "machine learning": 2024,
+            "tensorflow": 2024,
+            "nlp": 2023
+        },
+        "ground_truth": {
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C010",
+        "name": "Outdated Full Stack",
+        "description": "Full stack skills from 5+ years ago",
+        "skill_timeline": {
+            "angular": 2018,
+            "node.js": 2018,
+            "javascript": 2018,
+            "mongodb": 2018,
+            "typescript": 2018
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C011",
+        "name": "Current Full Stack",
+        "description": "Actively using full stack in 2024",
+        "skill_timeline": {
+            "angular": 2024,
+            "node.js": 2024,
+            "javascript": 2024,
+            "mongodb": 2024,
+            "typescript": 2024
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": True,
+            "Frontend Developer": True
+        }
+    },
+    {
+        "id": "C012",
+        "name": "Senior Developer Mixed",
+        "description": "10 year career, some fresh some stale",
+        "skill_timeline": {
+            "python": 2024,
+            "java": 2016,
+            "javascript": 2024,
+            "machine learning": 2023,
+            "angular": 2019
+        },
+        "ground_truth": {
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C013",
+        "name": "Fresh Data Scientist",
+        "description": "Active in data science 2023-2024",
+        "skill_timeline": {
+            "python": 2024,
+            "machine learning": 2024,
+            "sql": 2024,
+            "pandas": 2024,
+            "numpy": 2023
+        },
+        "ground_truth": {
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C014",
+        "name": "Stale Frontend Developer",
+        "description": "Frontend skills from 6 years ago",
+        "skill_timeline": {
+            "react": 2018,
+            "javascript": 2018,
+            "html": 2018,
+            "css": 2018,
+            "typescript": 2018
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C015",
+        "name": "Moderate Full Stack",
+        "description": "Full stack skills from 3 years ago",
+        "skill_timeline": {
+            "angular": 2021,
+            "node.js": 2021,
+            "javascript": 2021,
+            "mongodb": 2021,
+            "typescript": 2021
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": True,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C016",
+        "name": "Career Switcher Frontend",
+        "description": "Was backend, now frontend",
+        "skill_timeline": {
+            "python": 2020,
+            "java": 2020,
+            "react": 2024,
+            "javascript": 2024,
+            "typescript": 2024
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": False,
+            "Frontend Developer": True
+        }
+    },
+    {
+        "id": "C017",
+        "name": "Fresh Backend Developer",
+        "description": "Strong Python backend skills",
+        "skill_timeline": {
+            "python": 2024,
+            "fastapi": 2024,
+            "postgresql": 2024,
+            "docker": 2024,
+            "git": 2024
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C018",
+        "name": "Moderate ML Engineer",
+        "description": "ML skills from 2-3 years ago",
+        "skill_timeline": {
+            "python": 2022,
+            "tensorflow": 2022,
+            "machine learning": 2022,
+            "mongodb": 2023,
+            "nlp": 2022
+        },
+        "ground_truth": {
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C019",
+        "name": "Very Stale All Skills",
+        "description": "All skills from 8+ years ago",
+        "skill_timeline": {
+            "python": 2016,
+            "angular": 2016,
+            "react": 2016,
+            "machine learning": 2016,
+            "javascript": 2016
+        },
+        "ground_truth": {
+            "ML Engineer": False,
+            "Full Stack Developer": False,
+            "Frontend Developer": False
+        }
+    },
+    {
+        "id": "C020",
+        "name": "Balanced Current Developer",
+        "description": "Good mix of current skills",
+        "skill_timeline": {
+            "python": 2024,
+            "javascript": 2024,
+            "react": 2024,
+            "machine learning": 2023,
+            "sql": 2024
+        },
+        "ground_truth": {
+            "ML Engineer": True,
+            "Full Stack Developer": False,
+            "Frontend Developer": True
         }
     }
 ]
 
 # ================================================
-# STEP 3 — JOB DESCRIPTIONS TO TEST AGAINST
+# JOB DESCRIPTIONS
 # ================================================
 
 TEST_JOBS = [
@@ -172,7 +377,7 @@ TEST_JOBS = [
         "description": "Python, Machine Learning, TensorFlow, MongoDB, NLP required"
     },
     {
-        "title": "Full Stack Developer", 
+        "title": "Full Stack Developer",
         "description": "Angular, Node.js, MongoDB, JavaScript, TypeScript required"
     },
     {
@@ -182,95 +387,89 @@ TEST_JOBS = [
 ]
 
 # ================================================
-# STEP 4 — SYSTEM A: STATIC BASELINE
+# SYSTEM A — STATIC BASELINE
 # ================================================
 
 def system_a_predict(skill_timeline, job_description):
-    """Static keyword matching - no decay"""
     SKILLS = [
         "angular", "react", "vue", "javascript", "typescript", "html", "css",
         "node.js", "express", "python", "java", "django", "flask", "fastapi",
         "mongodb", "mysql", "postgresql", "sql", "firebase",
-        "tensorflow", "pytorch", "scikit-learn", "keras", "nlp", "machine learning",
-        "docker", "git", "aws", "azure", "linux"
+        "tensorflow", "pytorch", "scikit-learn", "keras", "nlp",
+        "machine learning", "docker", "git", "aws", "azure", "linux",
+        "pandas", "numpy"
     ]
-    
+
     job_lower = job_description.lower()
     required = [s for s in SKILLS if s in job_lower]
-    
+
     if not required:
         return False
-    
+
     matched = [s for s in required if s in skill_timeline]
     coverage = len(matched) / len(required)
-    
+
     return coverage >= GROUND_TRUTH_RULES["skill_coverage_threshold"]
 
 # ================================================
-# STEP 5 — SYSTEM B: CV DECAY ONLY
+# SYSTEM B — CV DECAY ONLY
 # ================================================
 
 def system_b_predict(skill_timeline, job_description):
-    """CV-only temporal decay model"""
     profile = apply_decay_to_profile(skill_timeline)
     required = extract_required_skills(job_description)
-    
+
     if not required:
         return False
-    
+
     match = calculate_match_score(profile, required)
     avg_freshness = match['match_percentage'] / 100
-    
+
     return avg_freshness >= GROUND_TRUTH_RULES["suitability_threshold"]
 
 # ================================================
-# STEP 6 — SYSTEM C: MULTI SOURCE (CV + decay)
-# For synthetic evaluation we use CV only since
-# we don't have GitHub for synthetic candidates
-# but we apply stricter decay to simulate it
+# SYSTEM C — ENHANCED DECAY
 # ================================================
 
 def system_c_predict(skill_timeline, job_description):
-    """Enhanced decay model with stricter thresholds"""
     profile = apply_decay_to_profile(skill_timeline)
     required = extract_required_skills(job_description)
-    
+
     if not required:
         return False
-    
+
     match = calculate_match_score(profile, required)
-    
-    # Check coverage
-    coverage = match['total_matched'] / match['total_required'] if match['total_required'] > 0 else 0
+    coverage = (match['total_matched'] / match['total_required']
+                if match['total_required'] > 0 else 0)
     avg_freshness = match['match_percentage'] / 100
-    
-    # Stricter combined threshold
-    return (avg_freshness >= GROUND_TRUTH_RULES["suitability_threshold"] and 
+
+    return (avg_freshness >= GROUND_TRUTH_RULES["suitability_threshold"] and
             coverage >= GROUND_TRUTH_RULES["skill_coverage_threshold"])
 
 # ================================================
-# STEP 7 — RUN EVALUATION
+# EVALUATE ONE SYSTEM
 # ================================================
 
 def evaluate_system(system_fn, system_name):
-    """Evaluate one system against all candidates and jobs"""
     correct = 0
     total = 0
     true_positives = 0
     true_negatives = 0
     false_positives = 0
     false_negatives = 0
-    
+    all_scores = []
+
     for candidate in SYNTHETIC_CANDIDATES:
         for job in TEST_JOBS:
             predicted = system_fn(
-                candidate['skill_timeline'], 
+                candidate['skill_timeline'],
                 job['description']
             )
             actual = candidate['ground_truth'].get(job['title'], False)
-            
+
             total += 1
-            
+            all_scores.append(1 if predicted == actual else 0)
+
             if predicted == actual:
                 correct += 1
                 if actual:
@@ -282,12 +481,15 @@ def evaluate_system(system_fn, system_name):
                     false_positives += 1
                 else:
                     false_negatives += 1
-    
+
     accuracy = correct / total if total > 0 else 0
-    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
-    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
-    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-    
+    precision = (true_positives / (true_positives + false_positives)
+                 if (true_positives + false_positives) > 0 else 0)
+    recall = (true_positives / (true_positives + false_negatives)
+              if (true_positives + false_negatives) > 0 else 0)
+    f1 = (2 * (precision * recall) / (precision + recall)
+          if (precision + recall) > 0 else 0)
+
     return {
         "system": system_name,
         "accuracy": round(accuracy * 100, 1),
@@ -299,20 +501,173 @@ def evaluate_system(system_fn, system_name):
         "true_positives": true_positives,
         "true_negatives": true_negatives,
         "false_positives": false_positives,
-        "false_negatives": false_negatives
+        "false_negatives": false_negatives,
+        "scores": all_scores
     }
 
 # ================================================
-# MAIN — RUN ALL 3 SYSTEMS
+# STATISTICAL SIGNIFICANCE TEST
+# ================================================
+
+def statistical_significance_test(result_a, result_b, label_b):
+    """
+    Paired t-test to check if improvement is statistically significant
+    p < 0.05 means the improvement is not due to chance
+    """
+    scores_a = result_a['scores']
+    scores_b = result_b['scores']
+
+    t_stat, p_value = stats.ttest_rel(scores_a, scores_b)
+
+    print(f"\nStatistical Significance: A vs {label_b}")
+    print(f"  T-statistic : {round(t_stat, 4)}")
+    print(f"  P-value     : {round(p_value, 4)}")
+
+    if p_value < 0.05:
+        print(f"  Result      : ✅ STATISTICALLY SIGNIFICANT (p < 0.05)")
+        print(f"  Meaning     : Improvement is NOT due to chance")
+    else:
+        print(f"  Result      : ⚠️  Not statistically significant (p >= 0.05)")
+        print(f"  Meaning     : Need more data to confirm improvement")
+
+    return t_stat, p_value
+
+# ================================================
+# NDCG METRIC
+# ================================================
+
+def calculate_ndcg(candidate, k=3):
+    """
+    Calculate NDCG@K for one candidate
+    Measures quality of job ranking
+    """
+    scores = []
+    for job in TEST_JOBS:
+        profile = apply_decay_to_profile(candidate['skill_timeline'])
+        required = extract_required_skills(job['description'])
+        if required:
+            match = calculate_match_score(profile, required)
+            scores.append((job['title'], match['match_percentage']))
+
+    # Sort by score
+    ranked = sorted(scores, key=lambda x: x[1], reverse=True)
+
+    # Ground truth relevant jobs
+    relevant = [j for j, v in candidate['ground_truth'].items() if v]
+
+    # DCG
+    dcg = 0
+    for i, (job_title, _) in enumerate(ranked[:k]):
+        relevance = 1 if job_title in relevant else 0
+        dcg += relevance / math.log2(i + 2)
+
+    # IDCG
+    idcg = sum(1 / math.log2(i + 2) for i in range(min(len(relevant), k)))
+
+    ndcg = dcg / idcg if idcg > 0 else 0
+    return round(ndcg, 3)
+
+# ================================================
+# ABLATION STUDY
+# ================================================
+
+def ablation_study():
+    """
+    Test contribution of each component separately
+    Shows which parts of model matter most
+    """
+    print("\n" + "=" * 70)
+    print("ABLATION STUDY")
+    print("=" * 70)
+    print("Testing contribution of each component:\n")
+
+    # Component 1 — No decay
+    result_no_decay = evaluate_system(
+        system_a_predict,
+        "No Decay (Baseline)"
+    )
+
+    # Component 2 — Uniform decay (no skill categories)
+    def uniform_decay_predict(skill_timeline, job_description):
+        required = extract_required_skills(job_description)
+        if not required:
+            return False
+
+        import math
+        current_year = 2024
+        total_score = 0
+        matched = 0
+
+        for skill in required:
+            if skill in skill_timeline:
+                years = current_year - skill_timeline[skill]
+                score = math.exp(-0.2 * years)  # Same λ for all
+                total_score += score
+                matched += 1
+
+        coverage = matched / len(required)
+        avg_score = total_score / len(required)
+
+        return (avg_score >= GROUND_TRUTH_RULES["suitability_threshold"]
+                and coverage >= GROUND_TRUTH_RULES["skill_coverage_threshold"])
+
+    result_uniform = evaluate_system(
+        uniform_decay_predict,
+        "Uniform Decay (no categories)"
+    )
+
+    # Component 3 — Full decay with categories
+    result_full = evaluate_system(
+        system_b_predict,
+        "Category Decay (full model)"
+    )
+
+    print(f"{'Component':<35} {'Accuracy':>10} {'F1':>10}")
+    print("-" * 60)
+    for r in [result_no_decay, result_uniform, result_full]:
+        print(f"{r['system']:<35} {r['accuracy']:>9}% {r['f1_score']:>9}%")
+
+    print()
+    print("Interpretation:")
+    diff_uniform = round(result_uniform['f1_score'] - result_no_decay['f1_score'], 1)
+    diff_full = round(result_full['f1_score'] - result_uniform['f1_score'], 1)
+    print(f"  Adding decay (uniform):     {diff_uniform:+.1f}% F1")
+    print(f"  Adding skill categories:    {diff_full:+.1f}% F1")
+
+# ================================================
+# NDCG EVALUATION
+# ================================================
+
+def ndcg_evaluation():
+    """Calculate average NDCG across all candidates"""
+    print("\n" + "=" * 70)
+    print("NDCG EVALUATION (Ranking Quality)")
+    print("=" * 70)
+
+    ndcg_scores = []
+    for candidate in SYNTHETIC_CANDIDATES:
+        ndcg = calculate_ndcg(candidate, k=3)
+        ndcg_scores.append(ndcg)
+
+    avg_ndcg = sum(ndcg_scores) / len(ndcg_scores)
+    print(f"\nNDCG@3 scores per candidate:")
+    for i, (c, s) in enumerate(zip(SYNTHETIC_CANDIDATES, ndcg_scores)):
+        print(f"  {c['name']:<35} NDCG@3: {s}")
+
+    print(f"\nAverage NDCG@3: {round(avg_ndcg, 3)}")
+    print("(1.0 = perfect ranking, 0.0 = worst ranking)")
+
+# ================================================
+# MAIN
 # ================================================
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("SYNTHETIC EVALUATION — 3 SYSTEM COMPARISON")
+    print("SKILLTEMPUS — SYNTHETIC EVALUATION")
     print("=" * 70)
-    print(f"Candidates: {len(SYNTHETIC_CANDIDATES)}")
-    print(f"Jobs: {len(TEST_JOBS)}")
-    print(f"Total test cases: {len(SYNTHETIC_CANDIDATES) * len(TEST_JOBS)}")
+    print(f"Candidates : {len(SYNTHETIC_CANDIDATES)}")
+    print(f"Jobs       : {len(TEST_JOBS)}")
+    print(f"Test cases : {len(SYNTHETIC_CANDIDATES) * len(TEST_JOBS)}")
     print()
 
     # Run all 3 systems
@@ -320,31 +675,45 @@ if __name__ == "__main__":
     result_b = evaluate_system(system_b_predict, "B - CV Decay Only")
     result_c = evaluate_system(system_c_predict, "C - Enhanced Decay")
 
-    # Print results table
-    print(f"{'System':<25} {'Accuracy':>10} {'Precision':>10} {'Recall':>10} {'F1 Score':>10}")
+    # Main results table
+    print(f"\n{'System':<25} {'Accuracy':>10} {'Precision':>10} "
+          f"{'Recall':>10} {'F1 Score':>10}")
     print("-" * 70)
-    
     for r in [result_a, result_b, result_c]:
-        print(f"{r['system']:<25} {r['accuracy']:>9}% {r['precision']:>9}% {r['recall']:>9}% {r['f1_score']:>9}%")
-    
-    print()
-    print("=" * 70)
+        print(f"{r['system']:<25} {r['accuracy']:>9}% "
+              f"{r['precision']:>9}% {r['recall']:>9}% "
+              f"{r['f1_score']:>9}%")
+
+    # Detailed breakdown
+    print("\n" + "=" * 70)
     print("DETAILED BREAKDOWN")
     print("=" * 70)
-    
     for r in [result_a, result_b, result_c]:
         print(f"\n{r['system']}")
-        print(f"  Correct: {r['correct']}/{r['total']}")
-        print(f"  True Positives:  {r['true_positives']}")
-        print(f"  True Negatives:  {r['true_negatives']}")
-        print(f"  False Positives: {r['false_positives']} ← overconfident matches")
+        print(f"  Correct        : {r['correct']}/{r['total']}")
+        print(f"  True Positives : {r['true_positives']}")
+        print(f"  True Negatives : {r['true_negatives']}")
+        print(f"  False Positives: {r['false_positives']} ← overconfident")
         print(f"  False Negatives: {r['false_negatives']} ← missed matches")
-    
-    print()
-    print("=" * 70)
+
+    # Key findings
+    print("\n" + "=" * 70)
     print("KEY FINDINGS")
     print("=" * 70)
-    print(f"  B vs A accuracy improvement: {result_b['accuracy'] - result_a['accuracy']:+.1f}%")
-    print(f"  C vs A accuracy improvement: {result_c['accuracy'] - result_a['accuracy']:+.1f}%")
-    print(f"  B vs A F1 improvement:       {result_b['f1_score'] - result_a['f1_score']:+.1f}%")
-    print(f"  C vs A F1 improvement:       {result_c['f1_score'] - result_a['f1_score']:+.1f}%")
+    print(f"  B vs A accuracy : {result_b['accuracy'] - result_a['accuracy']:+.1f}%")
+    print(f"  C vs A accuracy : {result_c['accuracy'] - result_a['accuracy']:+.1f}%")
+    print(f"  B vs A F1       : {result_b['f1_score'] - result_a['f1_score']:+.1f}%")
+    print(f"  C vs A F1       : {result_c['f1_score'] - result_a['f1_score']:+.1f}%")
+
+    # Statistical significance
+    print("\n" + "=" * 70)
+    print("STATISTICAL SIGNIFICANCE TESTS")
+    print("=" * 70)
+    statistical_significance_test(result_a, result_b, "System B")
+    statistical_significance_test(result_a, result_c, "System C")
+
+    # NDCG
+    ndcg_evaluation()
+
+    # Ablation study
+    ablation_study()
