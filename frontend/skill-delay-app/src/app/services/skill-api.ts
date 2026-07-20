@@ -7,8 +7,8 @@ import { Observable } from 'rxjs';
 })
 export class SkillApiService {
 
-  // private apiUrl = 'http://localhost:3000/api';
-  private apiUrl = 'https://skilltempus-backend.onrender.com/api';
+  private apiUrl = 'http://localhost:3000/api';
+ // private apiUrl = 'https://skilltempus-backend.onrender.com/api';
 
   constructor(private http: HttpClient) {}
 

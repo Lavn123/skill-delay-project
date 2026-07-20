@@ -15,7 +15,12 @@ const PORT = 3000;
 const JWT_SECRET = 'skilltempus_secret_key_2026';
 
 // Middleware
-app.use(cors());
+
+app.use(cors({
+    origin: ['https://your-vercel-url.vercel.app', 'http://localhost:4200'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // File upload setup
