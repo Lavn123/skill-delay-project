@@ -109,7 +109,8 @@ export class HistoryComponent implements OnInit {
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get('https://skilltempus-backend.onrender.com/api/user/history', { headers })
+    this.http.get('http://localhost:3000/api/user/history', { headers })
+   // this.http.get('https://skilltempus-backend.onrender.com/api/user/history', { headers })
       .subscribe({
         next: (result: any) => {
           const data = result?.data?.history || [];
