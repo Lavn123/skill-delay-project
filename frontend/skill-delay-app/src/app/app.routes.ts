@@ -7,6 +7,9 @@ import { LoginComponent } from './components/login/login';
 import { RegisterComponent } from './components/register/register';
 import { HistoryComponent } from './components/history/history';
 import { authGuard } from './guards/auth-guard';
+import { ComparisonDashboardComponent } from './components/comparison-dashboard/comparison-dashboard';
+
+
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -17,5 +20,6 @@ export const routes: Routes = [
   { path: 'upload', component: CvUploadComponent, canActivate: [authGuard] },
   { path: 'dashboard', component: SkillDashboardComponent, canActivate: [authGuard] },
   { path: 'jobs', component: JobMatchesComponent, canActivate: [authGuard] },
-  { path: 'history', component: HistoryComponent, canActivate: [authGuard] }
+  { path: 'history', component: HistoryComponent, canActivate: [authGuard] },
+{ path: 'comparison', component: ComparisonDashboardComponent, canActivate: [authGuard] }
 ];
