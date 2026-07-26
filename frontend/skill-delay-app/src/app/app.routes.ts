@@ -8,6 +8,8 @@ import { RegisterComponent } from './components/register/register';
 import { HistoryComponent } from './components/history/history';
 import { authGuard } from './guards/auth-guard';
 import { ComparisonDashboardComponent } from './components/comparison-dashboard/comparison-dashboard';
+import { EvaluationComponent } from './components/evaluation/evaluation';
+
 
 
 
@@ -21,5 +23,6 @@ export const routes: Routes = [
   { path: 'dashboard', component: SkillDashboardComponent, canActivate: [authGuard] },
   { path: 'jobs', component: JobMatchesComponent, canActivate: [authGuard] },
   { path: 'history', component: HistoryComponent, canActivate: [authGuard] },
-{ path: 'comparison', component: ComparisonDashboardComponent, canActivate: [authGuard] }
+{ path: 'comparison', component: ComparisonDashboardComponent, canActivate: [authGuard] },
+{ path: 'evaluation', component: EvaluationComponent, canActivate: [authGuard] },
 ];

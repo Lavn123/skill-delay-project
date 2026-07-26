@@ -54,6 +54,14 @@ import { Router } from '@angular/router';
         Comparison
       </a>
       <a
+        routerLink="/evaluation"
+        routerLinkActive="active-link"
+        style="color:rgba(255,255,255,0.8); text-decoration:none;
+          font-size:15px; padding:6px 14px; border-radius:20px;"
+      >
+        Research
+      </a>
+      <a
         routerLink="/jobs"
         routerLinkActive="active-link"
         style="color:rgba(255,255,255,0.8); text-decoration:none;
