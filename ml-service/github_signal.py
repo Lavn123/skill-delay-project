@@ -82,22 +82,39 @@ PYTHON_FRAMEWORK_DEPS = {
 
 def get_user_repos(username):
     """Fetch all public repositories for a GitHub user"""
-    url = f"{GITHUB_API}/users/{username}/repos"
-    params = {"sort": "pushed", "per_page": 30}
+    all_repos = []
+    page = 1
+    
+    while True:
+        url = f"{GITHUB_API}/users/{username}/repos"
+        params = {
+            "sort": "pushed",
+            "per_page": 100,  # Max allowed by GitHub
+            "page": page
+        }
 
-    response = requests.get(url, headers=get_headers(), params=params)
+        response = requests.get(url, headers=get_headers(), params=params)
 
-    if response.status_code == 200:
-        return response.json()
-    elif response.status_code == 403:
-        print("GitHub API rate limit reached!")
-        return []
-    elif response.status_code == 404:
-        print(f"GitHub user not found: {username}")
-        return []
-    else:
-        print(f"Error fetching repos: {response.status_code}")
-        return []
+        if response.status_code == 200:
+            repos = response.json()
+            if not repos:
+                break  # No more pages
+            all_repos.extend(repos)
+            if len(repos) < 100:
+                break  # Last page
+            page += 1
+        elif response.status_code == 403:
+            print("GitHub API rate limit reached!")
+            break
+        elif response.status_code == 404:
+            print(f"GitHub user not found: {username}")
+            break
+        else:
+            print(f"Error fetching repos: {response.status_code}")
+            break
+
+    print(f"Found {len(all_repos)} repositories")
+    return all_repos
 
 def get_repo_languages(username, repo_name):
     """Get languages used in a repository"""
