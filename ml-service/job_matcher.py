@@ -70,12 +70,10 @@ def extract_required_skills(job_description):
     job_lower = job_description.lower()
     required = []
 
-    # Check exact skill matches
     for skill in SKILLS:
         if skill.lower() in job_lower:
             required.append(skill)
 
-    # Check variations
     for variation, skill in SKILL_VARIATIONS.items():
         if variation in job_lower and skill not in required:
             required.append(skill)
@@ -114,7 +112,6 @@ def calculate_match_score(skill_profile, required_skills):
             missing_skills.append(skill)
             total_score += 0
 
-    # Calculate percentage match
     max_possible = len(required_skills)
     match_percentage = (total_score / max_possible) * 100
 
@@ -126,11 +123,16 @@ def calculate_match_score(skill_profile, required_skills):
         "total_matched": len(matched_skills)
     }
 
+
 def match_candidate_to_jobs(cv_text, job_descriptions):
+    """
+    Match one candidate against multiple job descriptions
+    Returns ranked list of top 10 unique jobs
+    """
     candidate_profile = run_pipeline(cv_text)
     skill_profile = candidate_profile['skill_profile']
 
-    # Map job titles to expected core skills
+    # Title to skill mapping for validation
     TITLE_SKILL_MAP = {
         "java": ["java"],
         "python": ["python"],
@@ -158,18 +160,16 @@ def match_candidate_to_jobs(cv_text, job_descriptions):
         if len(required_skills) < 2:
             continue
 
-        # Check job title matches required skills
+        # Check title matches description
         job_title_lower = job['title'].lower()
         title_mismatch = False
 
         for title_keyword, expected_skills in TITLE_SKILL_MAP.items():
             if title_keyword in job_title_lower:
-                # Check if at least one expected skill is required
                 if not any(s in required_skills for s in expected_skills):
                     title_mismatch = True
                     break
 
-        # Skip jobs where title doesn't match description
         if title_mismatch:
             continue
 
@@ -190,48 +190,25 @@ def match_candidate_to_jobs(cv_text, job_descriptions):
             "total_matched": match['total_matched']
         })
 
-    results = sorted(results,
-                    key=lambda x: x['match_percentage'],
-                    reverse=True)
+    # Rank by match percentage
+    results = sorted(
+        results,
+        key=lambda x: x['match_percentage'],
+        reverse=True
+    )
 
-    return results[:10]
+    # Remove duplicate job titles
+    seen_titles = set()
+    unique_results = []
+    for r in results:
+        title_key = r['job_title'].strip().lower()
+        if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            unique_results.append(r)
+
+    return unique_results[:10]
 
 
-    candidate_profile = run_pipeline(cv_text)
-    skill_profile = candidate_profile['skill_profile']
-
-    results = []
-
-    for job in job_descriptions:
-        required_skills = extract_required_skills(job['description'])
-
-        # Skip jobs with fewer than 2 required skills
-        # This removes low quality job descriptions
-        if len(required_skills) < 2:
-            continue
-
-        match = calculate_match_score(skill_profile, required_skills)
-
-        if not isinstance(match, dict):
-            continue
-
-        if match['match_percentage'] == 0:
-            continue
-
-        results.append({
-            "job_title": job['title'],
-            "match_percentage": match['match_percentage'],
-            "matched_skills": match['matched_skills'],
-            "missing_skills": match['missing_skills'],
-            "total_required": match['total_required'],
-            "total_matched": match['total_matched']
-        })
-
-    results = sorted(results,
-                    key=lambda x: x['match_percentage'],
-                    reverse=True)
-
-    return results[:10]
 # ---- TEST IT ----
 if __name__ == "__main__":
 

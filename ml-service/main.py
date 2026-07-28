@@ -12,16 +12,6 @@ from evaluation import system_a_static, system_b_cv_decay, system_c_multi_source
 from database import save_cv_analysis, save_job_matches, db, save_user_analysis, get_user_history
 from file_reader import extract_text_from_file
 
-def get_strength_label(score):
-    if score >= 0.7:
-        return "Strong"
-    elif score >= 0.4:
-        return "Moderate"
-    elif score >= 0.2:
-        return "Weak"
-    else:
-        return "Outdated"
-
 app = FastAPI(
     title="SkillTempus API",
     description="SkillTempus — Temporal skill decay modelling for time-aware job recommendation",
@@ -57,6 +47,96 @@ class LoginRequest(BaseModel):
     password: str
 
 # ================================================
+# HELPER FUNCTIONS
+# ================================================
+
+def get_strength_label(score):
+    if score >= 0.7:
+        return "Strong"
+    elif score >= 0.4:
+        return "Moderate"
+    elif score >= 0.2:
+        return "Weak"
+    else:
+        return "Outdated"
+
+TITLE_SKILL_MAP = {
+    "java": ["java"],
+    "python": ["python"],
+    "angular": ["angular"],
+    "react": ["react"],
+    "flutter": ["flutter"],
+    "ios": ["ios", "swift"],
+    "android": ["android"],
+    "devops": ["docker", "linux", "aws"],
+    "machine learning": ["machine learning", "python"],
+    "data scientist": ["python", "machine learning"],
+    "full stack": ["javascript", "node.js"],
+    "frontend": ["javascript", "html", "css"],
+    "backend": ["python", "java", "node.js"],
+    "django": ["django", "python"],
+    "node": ["node.js", "javascript"]
+}
+
+def filter_and_rank_jobs(results):
+    """Sort, deduplicate and return top 10 jobs"""
+    results = sorted(
+        results,
+        key=lambda x: x['match_percentage'],
+        reverse=True
+    )
+
+    seen_titles = set()
+    unique_results = []
+    for r in results:
+        title_key = r['job_title'].strip().lower()
+        if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            unique_results.append(r)
+
+    return unique_results[:10]
+
+def match_with_profile(skill_profile, job_descriptions):
+    """Match a skill profile against job descriptions"""
+    results = []
+
+    for job in job_descriptions:
+        required_skills = extract_required_skills(job['description'])
+
+        if len(required_skills) < 2:
+            continue
+
+        job_title_lower = job['title'].lower()
+        title_mismatch = False
+
+        for title_keyword, expected_skills in TITLE_SKILL_MAP.items():
+            if title_keyword in job_title_lower:
+                if not any(s in required_skills for s in expected_skills):
+                    title_mismatch = True
+                    break
+
+        if title_mismatch:
+            continue
+
+        match = calculate_match_score(skill_profile, required_skills)
+
+        if not isinstance(match, dict):
+            continue
+        if match['match_percentage'] == 0:
+            continue
+
+        results.append({
+            "job_title": job['title'],
+            "match_percentage": match['match_percentage'],
+            "matched_skills": match['matched_skills'],
+            "missing_skills": match['missing_skills'],
+            "total_required": match['total_required'],
+            "total_matched": match['total_matched']
+        })
+
+    return filter_and_rank_jobs(results)
+
+# ================================================
 # LOAD REAL JOB DATA ON STARTUP
 # ================================================
 
@@ -65,7 +145,10 @@ REAL_JOBS = []
 def load_real_jobs():
     global REAL_JOBS
     try:
-        df = pd.read_csv("../data/jobs.csv")
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        data_path = os.path.join(base_dir, '..', 'data', 'jobs.csv')
+        df = pd.read_csv(data_path)
         jobs = []
         for _, row in df.iterrows():
             title = str(row.get('Job Title', ''))
@@ -157,38 +240,6 @@ def match_jobs_route(request: MatchRequest):
         github_username=request.github_username
     )
 
-    # Debug
-    print(f"user_id received: '{request.user_id}'")
-
-    # Save to user history if user_id provided
-    if request.user_id:
-        try:
-            parsed = parse_cv(request.cv_text)
-            profile = apply_decay_to_profile(parsed['skill_timeline'])
-            save_user_analysis(
-                user_id=request.user_id,
-                cv_text=request.cv_text,
-                skill_timeline=parsed['skill_timeline'],
-                skill_profile={k: v for k, v in profile.items()},
-                matches=results
-            )
-            print(f"Saved history for user: {request.user_id}")
-        except Exception as e:
-            print(f"Could not save user history: {e}")
-
-    return {"matches": results}
-
-def match_jobs_route(request: MatchRequest):
-    job_descriptions = REAL_JOBS if REAL_JOBS else []
-    results = match_candidate_to_jobs(request.cv_text, job_descriptions)
-
-    save_job_matches(
-        cv_analysis_id="web_app",
-        matches=results,
-        github_username=request.github_username
-    )
-
-    # Save to user history if user_id provided
     if request.user_id:
         try:
             parsed = parse_cv(request.cv_text)
@@ -332,63 +383,7 @@ async def upload_cv_file(
             skill_profile = profile
 
         # Match against real jobs
-        results = []
-        for job in REAL_JOBS:
-            required_skills = extract_required_skills(job['description'])
-
-            if len(required_skills) < 2:
-                continue
-
-            job_title_lower = job['title'].lower()
-            title_mismatch = False
-            TITLE_SKILL_MAP = {
-                "java": ["java"],
-                "python": ["python"],
-                "angular": ["angular"],
-                "react": ["react"],
-                "flutter": ["flutter"],
-                "ios": ["ios", "swift"],
-                "android": ["android"],
-                "devops": ["docker", "linux", "aws"],
-                "machine learning": ["machine learning", "python"],
-                "data scientist": ["python", "machine learning"],
-                "full stack": ["javascript", "node.js"],
-                "frontend": ["javascript", "html", "css"],
-                "backend": ["python", "java", "node.js"],
-                "django": ["django", "python"],
-                "node": ["node.js", "javascript"]
-            }
-
-            for title_keyword, expected_skills in TITLE_SKILL_MAP.items():
-                if title_keyword in job_title_lower:
-                    if not any(s in required_skills for s in expected_skills):
-                        title_mismatch = True
-                        break
-
-            if title_mismatch:
-                continue
-
-            match = calculate_match_score(skill_profile, required_skills)
-
-            if not isinstance(match, dict):
-                continue
-            if match['match_percentage'] == 0:
-                continue
-
-            results.append({
-                "job_title": job['title'],
-                "match_percentage": match['match_percentage'],
-                "matched_skills": match['matched_skills'],
-                "missing_skills": match['missing_skills'],
-                "total_required": match['total_required'],
-                "total_matched": match['total_matched']
-            })
-
-        results = sorted(
-            results,
-            key=lambda x: x['match_percentage'],
-            reverse=True
-        )[:10]
+        results = match_with_profile(skill_profile, REAL_JOBS)
 
         if not results:
             return {"error": "No job matches found"}
@@ -423,7 +418,7 @@ async def upload_cv_file(
 
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
-    
+
 # ================================================
 # AUTH ROUTES
 # ================================================
