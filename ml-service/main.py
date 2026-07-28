@@ -12,6 +12,16 @@ from evaluation import system_a_static, system_b_cv_decay, system_c_multi_source
 from database import save_cv_analysis, save_job_matches, db, save_user_analysis, get_user_history
 from file_reader import extract_text_from_file
 
+def get_strength_label(score):
+    if score >= 0.7:
+        return "Strong"
+    elif score >= 0.4:
+        return "Moderate"
+    elif score >= 0.2:
+        return "Weak"
+    else:
+        return "Outdated"
+
 app = FastAPI(
     title="SkillTempus API",
     description="SkillTempus — Temporal skill decay modelling for time-aware job recommendation",
@@ -287,7 +297,98 @@ async def upload_cv_file(
             skill_profile={k: v for k, v in profile.items()}
         )
 
-        results = match_candidate_to_jobs(cv_text, REAL_JOBS)
+        # Use GitHub signals if username provided
+        if github_username and github_username.strip():
+            try:
+                print(f"Using GitHub signal for: {github_username}")
+                github_timeline = extract_github_signals(github_username)
+
+                if github_timeline:
+                    combined = combine_signals(
+                        parsed['skill_timeline'],
+                        github_timeline
+                    )
+
+                    from decay_model import get_skill_category
+                    skill_profile = {}
+                    for skill, data in combined.items():
+                        skill_profile[skill] = {
+                            "freshness_score": data['final_score'],
+                            "strength": get_strength_label(data['final_score']),
+                            "last_used": data['cv_last_used'] or data['github_last_used'],
+                            "category": get_skill_category(skill),
+                            "source": data['source']
+                        }
+
+                    print(f"Multi-source profile built with {len(skill_profile)} skills")
+                else:
+                    skill_profile = profile
+                    print("GitHub returned nothing — using CV only")
+
+            except Exception as e:
+                print(f"GitHub error: {e}")
+                skill_profile = profile
+        else:
+            skill_profile = profile
+
+        # Match against real jobs
+        results = []
+        for job in REAL_JOBS:
+            required_skills = extract_required_skills(job['description'])
+
+            if len(required_skills) < 2:
+                continue
+
+            job_title_lower = job['title'].lower()
+            title_mismatch = False
+            TITLE_SKILL_MAP = {
+                "java": ["java"],
+                "python": ["python"],
+                "angular": ["angular"],
+                "react": ["react"],
+                "flutter": ["flutter"],
+                "ios": ["ios", "swift"],
+                "android": ["android"],
+                "devops": ["docker", "linux", "aws"],
+                "machine learning": ["machine learning", "python"],
+                "data scientist": ["python", "machine learning"],
+                "full stack": ["javascript", "node.js"],
+                "frontend": ["javascript", "html", "css"],
+                "backend": ["python", "java", "node.js"],
+                "django": ["django", "python"],
+                "node": ["node.js", "javascript"]
+            }
+
+            for title_keyword, expected_skills in TITLE_SKILL_MAP.items():
+                if title_keyword in job_title_lower:
+                    if not any(s in required_skills for s in expected_skills):
+                        title_mismatch = True
+                        break
+
+            if title_mismatch:
+                continue
+
+            match = calculate_match_score(skill_profile, required_skills)
+
+            if not isinstance(match, dict):
+                continue
+            if match['match_percentage'] == 0:
+                continue
+
+            results.append({
+                "job_title": job['title'],
+                "match_percentage": match['match_percentage'],
+                "matched_skills": match['matched_skills'],
+                "missing_skills": match['missing_skills'],
+                "total_required": match['total_required'],
+                "total_matched": match['total_matched']
+            })
+
+        results = sorted(
+            results,
+            key=lambda x: x['match_percentage'],
+            reverse=True
+        )[:10]
 
         if not results:
             return {"error": "No job matches found"}
@@ -298,14 +399,13 @@ async def upload_cv_file(
             github_username=github_username
         )
 
-        # Save to user history if user_id provided
         if user_id:
             try:
                 save_user_analysis(
                     user_id=user_id,
                     cv_text=cv_text,
                     skill_timeline=parsed['skill_timeline'],
-                    skill_profile={k: v for k, v in profile.items()},
+                    skill_profile={k: v for k, v in skill_profile.items()},
                     matches=results
                 )
             except Exception as e:
@@ -316,13 +416,14 @@ async def upload_cv_file(
             "analysis_id": analysis_id,
             "total_skills": parsed['skills_found'],
             "skill_timeline": parsed['skill_timeline'],
-            "skill_profile": profile,
-            "matches": results
+            "skill_profile": skill_profile,
+            "matches": results,
+            "github_used": bool(github_username and github_username.strip())
         }
 
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
-
+    
 # ================================================
 # AUTH ROUTES
 # ================================================
