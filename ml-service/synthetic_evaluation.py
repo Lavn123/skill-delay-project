@@ -3,7 +3,15 @@ from datetime import datetime
 from scipy import stats
 from decay_model import apply_decay_to_profile, calculate_freshness, get_skill_category
 from job_matcher import extract_required_skills, calculate_match_score
-
+def get_strength(score):
+    if score >= 0.7:
+        return "Strong"
+    elif score >= 0.4:
+        return "Moderate"
+    elif score >= 0.2:
+        return "Weak"
+    else:
+        return "Outdated"
 # ================================================
 # GROUND TRUTH RULES
 # Fixed BEFORE model tuning — based on
@@ -28,7 +36,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C001",
         "name": "Fresh ML Engineer",
-        "description": "Recently active in ML",
+        "github_username": "chiphuyen",
         "skill_timeline": {
             "python": 2024,
             "tensorflow": 2024,
@@ -45,7 +53,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C002",
         "name": "Stale ML Engineer",
-        "description": "ML skills from 7 years ago",
+        "github_username": "",
         "skill_timeline": {
             "python": 2017,
             "tensorflow": 2017,
@@ -62,7 +70,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C003",
         "name": "Fresh Full Stack Developer",
-        "description": "Recently active in full stack",
+        "github_username": "bradtraversy",
         "skill_timeline": {
             "angular": 2024,
             "node.js": 2024,
@@ -79,7 +87,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C004",
         "name": "Stale Full Stack Developer",
-        "description": "Full stack skills from 7 years ago",
+        "github_username": "",
         "skill_timeline": {
             "angular": 2017,
             "node.js": 2017,
@@ -96,7 +104,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C005",
         "name": "Mixed Skills Developer",
-        "description": "Fresh Python but stale Angular",
+        "github_username": "",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
@@ -113,7 +121,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C006",
         "name": "Career Switcher ML",
-        "description": "Was Full Stack, switched to ML",
+        "github_username": "fastai",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
@@ -130,7 +138,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C007",
         "name": "Fresh Frontend Specialist",
-        "description": "Strong fresh frontend skills",
+        "github_username": "wesbos",
         "skill_timeline": {
             "react": 2024,
             "javascript": 2024,
@@ -147,7 +155,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C008",
         "name": "Generalist Developer 2022",
-        "description": "Average skills across all areas",
+        "github_username": "",
         "skill_timeline": {
             "python": 2022,
             "javascript": 2022,
@@ -164,7 +172,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C009",
         "name": "Recently Upskilled Developer",
-        "description": "Was Java dev, recently learned Python ML",
+        "github_username": "",
         "skill_timeline": {
             "java": 2019,
             "python": 2024,
@@ -181,7 +189,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C010",
         "name": "Outdated Full Stack",
-        "description": "Full stack skills from 5+ years ago",
+        "github_username": "",
         "skill_timeline": {
             "angular": 2018,
             "node.js": 2018,
@@ -198,7 +206,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C011",
         "name": "Current Full Stack",
-        "description": "Actively using full stack in 2024",
+        "github_username": "gothinkster",
         "skill_timeline": {
             "angular": 2024,
             "node.js": 2024,
@@ -215,7 +223,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C012",
         "name": "Senior Developer Mixed",
-        "description": "10 year career, some fresh some stale",
+        "github_username": "",
         "skill_timeline": {
             "python": 2024,
             "java": 2016,
@@ -232,7 +240,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C013",
         "name": "Fresh Data Scientist",
-        "description": "Active in data science 2023-2024",
+        "github_username": "jakevdp",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
@@ -249,7 +257,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C014",
         "name": "Stale Frontend Developer",
-        "description": "Frontend skills from 6 years ago",
+        "github_username": "",
         "skill_timeline": {
             "react": 2018,
             "javascript": 2018,
@@ -266,7 +274,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C015",
         "name": "Moderate Full Stack",
-        "description": "Full stack skills from 3 years ago",
+        "github_username": "",
         "skill_timeline": {
             "angular": 2021,
             "node.js": 2021,
@@ -283,7 +291,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C016",
         "name": "Career Switcher Frontend",
-        "description": "Was backend, now frontend",
+        "github_username": "cassidoo",
         "skill_timeline": {
             "python": 2020,
             "java": 2020,
@@ -300,7 +308,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C017",
         "name": "Fresh Backend Developer",
-        "description": "Strong Python backend skills",
+        "github_username": "",
         "skill_timeline": {
             "python": 2024,
             "fastapi": 2024,
@@ -317,7 +325,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C018",
         "name": "Moderate ML Engineer",
-        "description": "ML skills from 2-3 years ago",
+        "github_username": "",
         "skill_timeline": {
             "python": 2022,
             "tensorflow": 2022,
@@ -334,7 +342,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C019",
         "name": "Very Stale All Skills",
-        "description": "All skills from 8+ years ago",
+        "github_username": "",
         "skill_timeline": {
             "python": 2016,
             "angular": 2016,
@@ -351,7 +359,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C020",
         "name": "Balanced Current Developer",
-        "description": "Good mix of current skills",
+        "github_username": "nicedoc",
         "skill_timeline": {
             "python": 2024,
             "javascript": 2024,
@@ -366,7 +374,6 @@ SYNTHETIC_CANDIDATES = [
         }
     }
 ]
-
 # ================================================
 # JOB DESCRIPTIONS
 # ================================================
@@ -431,10 +438,34 @@ def system_b_predict(skill_timeline, job_description):
 # SYSTEM C — ENHANCED DECAY
 # ================================================
 
-def system_c_predict(skill_timeline, job_description):
-    profile = apply_decay_to_profile(skill_timeline)
-    required = extract_required_skills(job_description)
+def system_c_predict(skill_timeline, job_description, github_username=""):
+    """
+    System C - Multi source decay with GitHub signals
+    """
+    from github_signal import extract_github_signals, combine_signals
+    from decay_model import get_skill_category
 
+    # Try to get GitHub signals
+    if github_username:
+        try:
+            github_timeline = extract_github_signals(github_username)
+            if github_timeline:
+                combined = combine_signals(skill_timeline, github_timeline)
+                profile = {}
+                for skill, data in combined.items():
+                    profile[skill] = {
+                        "freshness_score": data['final_score'],
+                        "strength": get_strength(data['final_score'])
+                    }
+            else:
+                profile = apply_decay_to_profile(skill_timeline)
+        except Exception as e:
+            print(f"GitHub error: {e}")
+            profile = apply_decay_to_profile(skill_timeline)
+    else:
+        profile = apply_decay_to_profile(skill_timeline)
+
+    required = extract_required_skills(job_description)
     if not required:
         return False
 
@@ -443,14 +474,14 @@ def system_c_predict(skill_timeline, job_description):
                 if match['total_required'] > 0 else 0)
     avg_freshness = match['match_percentage'] / 100
 
-    return (avg_freshness >= GROUND_TRUTH_RULES["suitability_threshold"] and
-            coverage >= GROUND_TRUTH_RULES["skill_coverage_threshold"])
+    return (avg_freshness >= GROUND_TRUTH_RULES["suitability_threshold"]
+            and coverage >= GROUND_TRUTH_RULES["skill_coverage_threshold"])
 
 # ================================================
 # EVALUATE ONE SYSTEM
 # ================================================
 
-def evaluate_system(system_fn, system_name):
+def evaluate_system(system_fn, system_name, use_github=False):
     correct = 0
     total = 0
     true_positives = 0
@@ -461,12 +492,19 @@ def evaluate_system(system_fn, system_name):
 
     for candidate in SYNTHETIC_CANDIDATES:
         for job in TEST_JOBS:
-            predicted = system_fn(
-                candidate['skill_timeline'],
-                job['description']
-            )
-            actual = candidate['ground_truth'].get(job['title'], False)
+            if use_github:
+                predicted = system_fn(
+                    candidate['skill_timeline'],
+                    job['description'],
+                    candidate.get('github_username', '')
+                )
+            else:
+                predicted = system_fn(
+                    candidate['skill_timeline'],
+                    job['description']
+                )
 
+            actual = candidate['ground_truth'].get(job['title'], False)
             total += 1
             all_scores.append(1 if predicted == actual else 0)
 
@@ -504,7 +542,6 @@ def evaluate_system(system_fn, system_name):
         "false_negatives": false_negatives,
         "scores": all_scores
     }
-
 # ================================================
 # STATISTICAL SIGNIFICANCE TEST
 # ================================================
@@ -673,7 +710,11 @@ if __name__ == "__main__":
     # Run all 3 systems
     result_a = evaluate_system(system_a_predict, "A - Static Baseline")
     result_b = evaluate_system(system_b_predict, "B - CV Decay Only")
-    result_c = evaluate_system(system_c_predict, "C - Enhanced Decay")
+    result_c = evaluate_system(
+        system_c_predict,
+        "C - Multi Source (CV + GitHub)",
+        use_github=True  # ← Now uses real GitHub!
+    )
 
     # Main results table
     print(f"\n{'System':<25} {'Accuracy':>10} {'Precision':>10} "

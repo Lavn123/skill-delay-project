@@ -70,12 +70,10 @@ def extract_required_skills(job_description):
     job_lower = job_description.lower()
     required = []
 
-    # Check exact skill matches
     for skill in SKILLS:
         if skill.lower() in job_lower:
             required.append(skill)
 
-    # Check variations
     for variation, skill in SKILL_VARIATIONS.items():
         if variation in job_lower and skill not in required:
             required.append(skill)
@@ -114,7 +112,6 @@ def calculate_match_score(skill_profile, required_skills):
             missing_skills.append(skill)
             total_score += 0
 
-    # Calculate percentage match
     max_possible = len(required_skills)
     match_percentage = (total_score / max_possible) * 100
 
@@ -130,29 +127,57 @@ def calculate_match_score(skill_profile, required_skills):
 def match_candidate_to_jobs(cv_text, job_descriptions):
     """
     Match one candidate against multiple job descriptions
-    Returns ranked list of top 10 jobs
+    Returns ranked list of top 10 unique jobs
     """
-    # Get candidate skill profile
     candidate_profile = run_pipeline(cv_text)
     skill_profile = candidate_profile['skill_profile']
+
+    # Title to skill mapping for validation
+    TITLE_SKILL_MAP = {
+        "java": ["java"],
+        "python": ["python"],
+        "angular": ["angular"],
+        "react": ["react"],
+        "flutter": ["flutter"],
+        "ios": ["ios", "swift"],
+        "android": ["android"],
+        "devops": ["docker", "linux", "aws"],
+        "machine learning": ["machine learning", "python"],
+        "data scientist": ["python", "machine learning"],
+        "full stack": ["javascript", "node.js"],
+        "frontend": ["javascript", "html", "css"],
+        "backend": ["python", "java", "node.js"],
+        "django": ["django", "python"],
+        "node": ["node.js", "javascript"]
+    }
 
     results = []
 
     for job in job_descriptions:
-        # Get required skills
         required_skills = extract_required_skills(job['description'])
 
-        # Skip jobs with no extractable skills
-        if not required_skills:
+        # Skip jobs with fewer than 2 required skills
+        if len(required_skills) < 2:
+            continue
+
+        # Check title matches description
+        job_title_lower = job['title'].lower()
+        title_mismatch = False
+
+        for title_keyword, expected_skills in TITLE_SKILL_MAP.items():
+            if title_keyword in job_title_lower:
+                if not any(s in required_skills for s in expected_skills):
+                    title_mismatch = True
+                    break
+
+        if title_mismatch:
             continue
 
         match = calculate_match_score(skill_profile, required_skills)
 
-        # Skip if match returned invalid result
         if not isinstance(match, dict):
             continue
 
-        # Only include jobs with some match
         if match['match_percentage'] == 0:
             continue
 
@@ -172,8 +197,16 @@ def match_candidate_to_jobs(cv_text, job_descriptions):
         reverse=True
     )
 
-    # Return top 10 only
-    return results[:10]
+    # Remove duplicate job titles
+    seen_titles = set()
+    unique_results = []
+    for r in results:
+        title_key = r['job_title'].strip().lower()
+        if title_key not in seen_titles:
+            seen_titles.add(title_key)
+            unique_results.append(r)
+
+    return unique_results[:10]
 
 
 # ---- TEST IT ----
