@@ -10,303 +10,272 @@ Chart.register(...registerables);
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #f5f7fa, #e8f0fe);
-                padding:40px 20px;">
+    <div style="min-height:100vh; background:var(--gradient-bg); padding:40px 20px;">
       <div style="max-width:1100px; margin:0 auto;">
 
         <!-- Header -->
-        <div style="margin-bottom:30px;">
-          <h2 style="color:#1F3864; font-size:32px; margin:0 0 8px;">
+        <div class="animate-fade-up" style="margin-bottom:32px;">
+          <h2 style="font-size:32px; font-weight:700; letter-spacing:-0.5px;
+                     color:var(--text-primary); margin-bottom:8px;">
             📊 System Comparison Dashboard
           </h2>
-          <p style="color:#777; margin:0;">
-            Comparing Current ATS (System A) vs SkillTempus Multi-Source Model (System C)
+          <p style="color:var(--text-secondary); font-size:15px;">
+            Current ATS (System A) vs SkillTempus Multi-Source (System C)
           </p>
         </div>
 
-        <!-- No data state -->
+        <!-- No Data -->
         <div *ngIf="!skills.length"
-             style="text-align:center; padding:60px; background:white;
-                    border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+             class="glass-card animate-fade-up"
+             style="padding:60px; text-align:center;">
           <div style="font-size:50px; margin-bottom:16px;">📄</div>
-          <p style="color:#777; font-size:16px; margin-bottom:20px;">
+          <p style="color:var(--text-secondary); font-size:16px; margin-bottom:20px;">
             Upload your CV first to see the comparison
           </p>
-          <a routerLink="/upload">
-            <button style="background:linear-gradient(135deg, #2E75B6, #1F3864);
-                           color:white; padding:12px 30px; border:none;
-                           border-radius:25px; cursor:pointer; font-size:15px;">
-              Upload CV →
-            </button>
+          <a routerLink="/upload" class="btn-primary" style="text-decoration:none;">
+            Upload CV →
           </a>
         </div>
 
-        <!-- Dashboard Content -->
         <div *ngIf="skills.length">
 
           <!-- Summary Cards -->
-          <div style="display:grid; grid-template-columns:repeat(4, 1fr);
-                      gap:16px; margin-bottom:30px;">
-
-            <div style="background:white; border-radius:14px; padding:20px;
-                        text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-              <div style="font-size:28px; font-weight:800; color:#1F3864;">
-                {{ skills.length }}
-              </div>
-              <div style="color:#777; font-size:13px; margin-top:4px;">
-                Total Skills
-              </div>
+          <div class="animate-fade-up-delay-1"
+               style="display:grid; grid-template-columns:repeat(4,1fr);
+                      gap:16px; margin-bottom:24px;">
+            <div class="stat-card">
+              <span class="stat-number">{{ skills.length }}</span>
+              <div class="stat-label">Total Skills</div>
             </div>
-
-            <div style="background:white; border-radius:14px; padding:20px;
-                        text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-              <div style="font-size:28px; font-weight:800; color:#dc3545;">
+            <div class="stat-card">
+              <span class="stat-number" style="color:var(--color-danger);">
                 100%
-              </div>
-              <div style="color:#777; font-size:13px; margin-top:4px;">
-                System A Avg Score
-              </div>
+              </span>
+              <div class="stat-label">System A Avg</div>
             </div>
-
-            <div style="background:white; border-radius:14px; padding:20px;
-                        text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-              <div style="font-size:28px; font-weight:800; color:#28a745;">
-                {{ systemBAvg }}%
-              </div>
-              <div style="color:#777; font-size:13px; margin-top:4px;">
-                System C Avg Score
-              </div>
+            <div class="stat-card">
+              <span class="stat-number" style="color:var(--color-success);">
+                {{ systemCAvg }}%
+              </span>
+              <div class="stat-label">System C Avg</div>
             </div>
-
-            <div style="background:white; border-radius:14px; padding:20px;
-                        text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.06);
-                        border:2px solid #2E75B6;">
-              <div style="font-size:28px; font-weight:800; color:#2E75B6;">
+            <div class="stat-card"
+                 style="border:0.5px solid var(--border-strong);">
+              <span class="stat-number" style="color:var(--color-primary);">
                 {{ outdatedCount }}
-              </div>
-              <div style="color:#777; font-size:13px; margin-top:4px;">
-                Overconfident (System A)
-              </div>
+              </span>
+              <div class="stat-label">Overconfident (A)</div>
             </div>
-
           </div>
 
-          <!-- Key Insight Banner -->
-          <div style="background:linear-gradient(135deg, #1F3864, #2E75B6);
-                      border-radius:14px; padding:20px 30px; margin-bottom:30px;
-                      color:white;">
-            <h3 style="margin:0 0 8px; font-size:18px;">🔍 Key Insight</h3>
-            <p style="margin:0; opacity:0.9; font-size:15px; line-height:1.6;">
-              System A (Current ATS) gives <strong>100% score to ALL skills</strong>
+          <!-- Key Insight -->
+          <div class="animate-fade-up-delay-2"
+               style="background:var(--gradient-primary);
+                      border-radius:var(--radius-lg); padding:24px 28px;
+                      margin-bottom:24px; color:white;">
+            <h3 style="margin:0 0 8px; font-size:17px; font-weight:600;">
+              🔍 Key Insight
+            </h3>
+            <p style="margin:0; opacity:0.9; font-size:14px; line-height:1.7;">
+              System A gives <strong>100% to ALL {{ skills.length }} skills</strong>
               regardless of when they were last used.
-              System C (SkillTempus Multi-Source) correctly assigns lower scores to
-              <strong>{{ outdatedCount }} outdated skills</strong> using both
-              CV timestamps and GitHub signals. This prevents recommending candidates
-              with stale skills for roles requiring current expertise.
+              System C correctly identifies
+              <strong>{{ outdatedCount }} outdated skills</strong>
+              using CV timestamps and GitHub signals —
+              preventing overconfident matches that waste recruiter time.
             </p>
           </div>
 
-          <!-- Skills Comparison Table -->
-          <div style="background:white; border-radius:16px; padding:24px;
-                      margin-bottom:30px; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-
-            <h3 style="color:#1F3864; margin:0 0 20px; font-size:20px;">
-              📋 Skill-by-Skill Comparison (System A vs System C)
-            </h3>
-
-            <div style="overflow-x:auto;">
-              <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                  <tr style="background:#f8f9ff;">
-                    <th style="padding:12px 16px; text-align:left; color:#1F3864;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      Skill
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#1F3864;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      Last Used
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#1F3864;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      Category
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#dc3545;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      System A (ATS)
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#28a745;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      System C (SkillTempus)
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#1F3864;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      Difference
-                    </th>
-                    <th style="padding:12px 16px; text-align:center; color:#1F3864;
-                                font-size:13px; border-bottom:2px solid #e0e0e0;">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let skill of skills; let i = index"
-                      [style.background]="i % 2 === 0 ? 'white' : '#fafafa'">
-
-                    <td style="padding:12px 16px; font-weight:600;
-                                text-transform:capitalize; color:#1F3864;">
-                      {{ skill.name }}
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;
-                                color:#555; font-size:14px;">
-                      {{ skill.last_used }}
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;">
-                      <span style="background:#f0f4ff; color:#2E75B6;
-                                   padding:3px 10px; border-radius:10px;
-                                   font-size:12px;">
-                        {{ skill.category }}
-                      </span>
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;">
-                      <div style="display:flex; align-items:center;
-                                  justify-content:center; gap:8px;">
-                        <div style="background:#f0f0f0; border-radius:10px;
-                                    height:8px; width:80px; overflow:hidden;">
-                          <div style="width:100%; height:100%;
-                                      background:#dc3545; border-radius:10px;">
-                          </div>
-                        </div>
-                        <span style="color:#dc3545; font-weight:600; font-size:13px;">
-                          100%
-                        </span>
-                      </div>
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;">
-                      <div style="display:flex; align-items:center;
-                                  justify-content:center; gap:8px;">
-                        <div style="background:#f0f0f0; border-radius:10px;
-                                    height:8px; width:80px; overflow:hidden;">
-                          <div [style.width.%]="skill.freshness_score * 100"
-                               [style.background]="getScoreColor(skill.freshness_score)"
-                               style="height:100%; border-radius:10px;
-                                      transition:width 0.5s;">
-                          </div>
-                        </div>
-                        <span [style.color]="getScoreColor(skill.freshness_score)"
-                              style="font-weight:600; font-size:13px;">
-                          {{ (skill.freshness_score * 100).toFixed(0) }}%
-                        </span>
-                      </div>
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;
-                                font-weight:600; font-size:13px;"
-                        [style.color]="getDiffColor(skill.freshness_score)">
-                      {{ getDiff(skill.freshness_score) }}
-                    </td>
-
-                    <td style="padding:12px 16px; text-align:center;">
-                      <span [style.background]="getStatusBg(skill.strength)"
-                            [style.color]="getStatusColor(skill.strength)"
-                            style="padding:4px 10px; border-radius:10px;
-                                   font-size:12px; font-weight:600;">
-                        {{ skill.strength }}
-                      </span>
-                    </td>
-
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           <!-- Charts Row -->
-          <div style="display:grid; grid-template-columns:1fr 1fr;
-                      gap:24px; margin-bottom:30px;">
+          <div class="animate-fade-up-delay-2"
+               style="display:grid; grid-template-columns:1fr 1fr;
+                      gap:20px; margin-bottom:20px;">
 
-            <div style="background:white; border-radius:16px; padding:24px;
-                        box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-              <h3 style="color:#1F3864; margin:0 0 16px; font-size:18px;">
+            <div class="glass-card" style="padding:24px;">
+              <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
+                         margin-bottom:16px;">
                 📊 Score Comparison (A vs C)
               </h3>
               <canvas #barChart></canvas>
             </div>
 
-            <div style="background:white; border-radius:16px; padding:24px;
-                        box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-              <h3 style="color:#1F3864; margin:0 0 16px; font-size:18px;">
-                🕸️ Skill Profile Radar (A vs C)
+            <div class="glass-card" style="padding:24px;">
+              <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
+                         margin-bottom:16px;">
+                🕸️ Skill Profile Radar
               </h3>
               <canvas #radarChart></canvas>
             </div>
 
           </div>
 
-          <!-- Timeline Chart -->
-          <div style="background:white; border-radius:16px; padding:24px;
-                      margin-bottom:30px; box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-            <h3 style="color:#1F3864; margin:0 0 8px; font-size:18px;">
+          <!-- Timeline -->
+          <div class="glass-card animate-fade-up-delay-3"
+               style="padding:24px; margin-bottom:20px;">
+            <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
+                       margin-bottom:6px;">
               📈 Skill Decay Timeline
             </h3>
-            <p style="color:#777; font-size:13px; margin:0 0 16px;">
-              Shows how skill freshness decreases over time for each category
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+              How skill freshness decreases over time per decay category
             </p>
             <canvas #timelineChart></canvas>
           </div>
 
-          <!-- System A vs C Summary -->
-          <div style="display:grid; grid-template-columns:1fr 1fr;
-                      gap:24px; margin-bottom:30px;">
+          <!-- Skill Table -->
+          <div class="glass-card animate-fade-up-delay-3"
+               style="padding:24px; margin-bottom:20px;">
+            <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
+                       margin-bottom:20px;">
+              📋 Skill-by-Skill Comparison
+            </h3>
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr style="background:rgba(79,70,229,0.06);">
+                    <th style="padding:12px 16px; text-align:left;
+                                color:var(--text-primary); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      Skill
+                    </th>
+                    <th style="padding:12px 16px; text-align:center;
+                                color:var(--text-primary); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      Last Used
+                    </th>
+                    <th style="padding:12px 16px; text-align:center;
+                                color:var(--text-primary); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      Category
+                    </th>
+                    <th style="padding:12px 16px; text-align:center;
+                                color:var(--color-danger); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      System A
+                    </th>
+                    <th style="padding:12px 16px; text-align:center;
+                                color:var(--color-success); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      System C
+                    </th>
+                    <th style="padding:12px 16px; text-align:center;
+                                color:var(--text-primary); font-size:12px;
+                                border-bottom:0.5px solid var(--border-default);">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let skill of skills; let i = index"
+                      [style.background]="i % 2 === 0 ?
+                        'transparent' : 'rgba(0,0,0,0.02)'">
+                    <td style="padding:12px 16px; font-weight:600;
+                                text-transform:capitalize;
+                                color:var(--text-primary); font-size:13px;">
+                      {{ skill.name }}
+                    </td>
+                    <td style="padding:12px 16px; text-align:center;
+                                color:var(--text-muted); font-size:13px;">
+                      {{ skill.last_used }}
+                    </td>
+                    <td style="padding:12px 16px; text-align:center;">
+                      <span style="background:var(--color-primary-light);
+                                   color:var(--color-primary); font-size:11px;
+                                   padding:2px 8px;
+                                   border-radius:var(--radius-full);">
+                        {{ skill.category }}
+                      </span>
+                    </td>
+                    <td style="padding:12px 16px; text-align:center;">
+                      <div style="display:flex; align-items:center;
+                                  justify-content:center; gap:6px;">
+                        <div style="background:rgba(0,0,0,0.06);
+                                    border-radius:var(--radius-full);
+                                    height:6px; width:60px; overflow:hidden;">
+                          <div style="width:100%; height:100%;
+                                      background:var(--color-danger);
+                                      border-radius:var(--radius-full);">
+                          </div>
+                        </div>
+                        <span style="font-size:12px; font-weight:600;
+                                     color:var(--color-danger);">100%</span>
+                      </div>
+                    </td>
+                    <td style="padding:12px 16px; text-align:center;">
+                      <div style="display:flex; align-items:center;
+                                  justify-content:center; gap:6px;">
+                        <div style="background:rgba(0,0,0,0.06);
+                                    border-radius:var(--radius-full);
+                                    height:6px; width:60px; overflow:hidden;">
+                          <div [style.width.%]="skill.freshness_score * 100"
+                               [class]="'bar-animate bar-' + skill.strength.toLowerCase()"
+                               style="height:100%; border-radius:var(--radius-full);">
+                          </div>
+                        </div>
+                        <span [class]="'badge badge-' + skill.strength.toLowerCase()"
+                              style="font-size:11px;">
+                          {{ (skill.freshness_score * 100).toFixed(0) }}%
+                        </span>
+                      </div>
+                    </td>
+                    <td style="padding:12px 16px; text-align:center;">
+                      <span [class]="'badge badge-' + skill.strength.toLowerCase()">
+                        {{ skill.strength }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            <div style="background:white; border-radius:16px; padding:24px;
-                        box-shadow:0 4px 20px rgba(0,0,0,0.08);
-                        border-top:4px solid #dc3545;">
-              <h3 style="color:#dc3545; margin:0 0 16px;">
+          <!-- A vs C Summary -->
+          <div class="animate-fade-up-delay-4"
+               style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+            <div class="glass-card"
+                 style="padding:24px; border-top:3px solid var(--color-danger);">
+              <h3 style="color:var(--color-danger); margin:0 0 12px; font-size:16px;">
                 ❌ System A — Current ATS
               </h3>
-              <p style="color:#555; font-size:14px; line-height:1.8; margin:0;">
-                Treats all {{ skills.length }} skills as equally relevant
-                regardless of when they were last used. A candidate with skills
-                from 2015 gets the same score as one with skills from 2024.
-                This leads to <strong>overconfident matches</strong> and
-                poor hiring decisions.
+              <p style="color:var(--text-secondary); font-size:14px;
+                        line-height:1.7; margin:0 0 16px;">
+                Treats all {{ skills.length }} skills equally regardless
+                of when they were last used. A skill from 2015 scores the
+                same as one used yesterday. Leads to
+                <strong>overconfident matches</strong>.
               </p>
-              <div style="margin-top:16px; padding:12px; background:#fff5f5;
-                          border-radius:8px;">
-                <strong style="color:#dc3545;">Average Score: 100%</strong>
-                <br>
-                <span style="color:#777; font-size:13px;">
+              <div style="background:var(--color-danger-bg);
+                          border-radius:var(--radius-md); padding:12px 16px;">
+                <strong style="color:var(--color-danger);">
+                  Average Score: 100%
+                </strong>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
                   Same for every candidate regardless of skill recency
-                </span>
+                </div>
               </div>
             </div>
 
-            <div style="background:white; border-radius:16px; padding:24px;
-                        box-shadow:0 4px 20px rgba(0,0,0,0.08);
-                        border-top:4px solid #28a745;">
-              <h3 style="color:#28a745; margin:0 0 16px;">
-                ✅ System C — SkillTempus Multi-Source
+            <div class="glass-card"
+                 style="padding:24px; border-top:3px solid var(--color-success);">
+              <h3 style="color:var(--color-success); margin:0 0 12px; font-size:16px;">
+                ✅ System C — SkillTempus
               </h3>
-              <p style="color:#555; font-size:14px; line-height:1.8; margin:0;">
-                Combines CV timestamps AND GitHub contribution signals to assign
-                freshness scores based on when each skill was last actively used —
-                both professionally and personally. Achieves
-                <strong>86.7% accuracy</strong> vs 76.7% for System A,
-                with 10% improvement and 57% fewer false positives.
+              <p style="color:var(--text-secondary); font-size:14px;
+                        line-height:1.7; margin:0 0 16px;">
+                Combines CV timestamps AND GitHub signals to score skills
+                by actual freshness. Achieves
+                <strong>85.0% accuracy</strong> vs 75.0% for System A —
+                a statistically significant improvement (p = 0.0327).
               </p>
-              <div style="margin-top:16px; padding:12px; background:#f0fff4;
-                          border-radius:8px;">
-                <strong style="color:#28a745;">
-                  Average Score: {{ systemBAvg }}%
+              <div style="background:var(--color-success-bg);
+                          border-radius:var(--radius-md); padding:12px 16px;">
+                <strong style="color:var(--color-success);">
+                  Average Score: {{ systemCAvg }}%
                 </strong>
-                <br>
-                <span style="color:#777; font-size:13px;">
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
                   Varies based on actual skill freshness from CV + GitHub
-                </span>
+                </div>
               </div>
             </div>
 
@@ -323,12 +292,8 @@ export class ComparisonDashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('timelineChart') timelineChartRef!: ElementRef;
 
   skills: any[] = [];
-  systemBAvg = 0;
+  systemCAvg = 0;
   outdatedCount = 0;
-
-  barChartInstance: any;
-  radarChartInstance: any;
-  timelineChartInstance: any;
 
   ngOnInit() {
     const stored = localStorage.getItem('skillProfile');
@@ -339,7 +304,7 @@ export class ComparisonDashboardComponent implements OnInit, AfterViewInit {
       .map(([name, data]: [string, any]) => ({ name, ...data }))
       .sort((a, b) => b.last_used - a.last_used);
 
-    this.systemBAvg = Math.round(
+    this.systemCAvg = Math.round(
       this.skills.reduce((sum, s) => sum + s.freshness_score * 100, 0) /
       this.skills.length
     );
@@ -355,198 +320,140 @@ export class ComparisonDashboardComponent implements OnInit, AfterViewInit {
         this.buildBarChart();
         this.buildRadarChart();
         this.buildTimelineChart();
-      }, 100);
+      }, 200);
     }
   }
 
   buildBarChart() {
-    const labels = this.skills.map(s => s.name);
-    const systemAScores = this.skills.map(() => 100);
-    const systemCScores = this.skills.map(s =>
-      Math.round(s.freshness_score * 100)
+    if (!this.barChartRef) return;
+    const labels = this.skills.slice(0, 10).map(s => s.name);
+    const systemCScores = this.skills.slice(0, 10).map(
+      s => Math.round(s.freshness_score * 100)
     );
 
-    this.barChartInstance = new Chart(
-      this.barChartRef.nativeElement,
-      {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'System A (Current ATS)',
-              data: systemAScores,
-              backgroundColor: 'rgba(220, 53, 69, 0.7)',
-              borderColor: '#dc3545',
-              borderWidth: 1
-            },
-            {
-              label: 'System C (SkillTempus Multi-Source)',
-              data: systemCScores,
-              backgroundColor: 'rgba(40, 167, 69, 0.7)',
-              borderColor: '#28a745',
-              borderWidth: 1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: { display: true, text: 'Score (%)' }
-            }
+    new Chart(this.barChartRef.nativeElement, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'System A (ATS)',
+            data: labels.map(() => 100),
+            backgroundColor: 'rgba(220,38,38,0.7)',
+            borderRadius: 4
           },
-          plugins: { legend: { position: 'top' } }
-        }
+          {
+            label: 'System C (SkillTempus)',
+            data: systemCScores,
+            backgroundColor: 'rgba(5,150,105,0.7)',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true, max: 100,
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            title: { display: true, text: 'Score (%)' }
+          },
+          x: { grid: { display: false } }
+        },
+        plugins: { legend: { position: 'top' } }
       }
-    );
+    });
   }
 
   buildRadarChart() {
-    const labels = this.skills.slice(0, 8).map(s => s.name);
-    const systemCScores = this.skills.slice(0, 8).map(s =>
-      Math.round(s.freshness_score * 100)
+    if (!this.radarChartRef) return;
+    const top = this.skills.slice(0, 7);
+    const labels = top.map(s => s.name);
+    const systemCScores = top.map(
+      s => Math.round(s.freshness_score * 100)
     );
 
-    this.radarChartInstance = new Chart(
-      this.radarChartRef.nativeElement,
-      {
-        type: 'radar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'System A (ATS)',
-              data: labels.map(() => 100),
-              backgroundColor: 'rgba(220, 53, 69, 0.2)',
-              borderColor: '#dc3545',
-              borderWidth: 2
-            },
-            {
-              label: 'System C (SkillTempus)',
-              data: systemCScores,
-              backgroundColor: 'rgba(40, 167, 69, 0.2)',
-              borderColor: '#28a745',
-              borderWidth: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: { r: { beginAtZero: true, max: 100 } },
-          plugins: { legend: { position: 'top' } }
-        }
+    new Chart(this.radarChartRef.nativeElement, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'System A',
+            data: labels.map(() => 100),
+            backgroundColor: 'rgba(220,38,38,0.15)',
+            borderColor: '#dc2626',
+            borderWidth: 2
+          },
+          {
+            label: 'System C',
+            data: systemCScores,
+            backgroundColor: 'rgba(5,150,105,0.15)',
+            borderColor: '#059669',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: { r: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { position: 'top' } }
       }
-    );
+    });
   }
 
   buildTimelineChart() {
+    if (!this.timelineChartRef) return;
     const years = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    const currentYear = 2024;
-    const labels = years.map(y => `${currentYear - y}`);
+    const labels = years.map(y => `${2024 - y}`);
 
-    const fastDecay = years.map(y =>
-      Math.round(Math.exp(-0.3 * y) * 100)
-    );
-    const mediumDecay = years.map(y =>
-      Math.round(Math.exp(-0.2 * y) * 100)
-    );
-    const slowDecay = years.map(y =>
-      Math.round(Math.exp(-0.1 * y) * 100)
-    );
-    const systemA = years.map(() => 100);
-
-    this.timelineChartInstance = new Chart(
-      this.timelineChartRef.nativeElement,
-      {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'System A (No Decay)',
-              data: systemA,
-              borderColor: '#dc3545',
-              backgroundColor: 'transparent',
-              borderWidth: 2,
-              borderDash: [5, 5]
-            },
-            {
-              label: 'Fast Decay (Frameworks e.g. Angular, TensorFlow)',
-              data: fastDecay,
-              borderColor: '#e83e8c',
-              backgroundColor: 'transparent',
-              borderWidth: 2
-            },
-            {
-              label: 'Medium Decay (Languages e.g. Python, JavaScript)',
-              data: mediumDecay,
-              borderColor: '#2E75B6',
-              backgroundColor: 'transparent',
-              borderWidth: 2
-            },
-            {
-              label: 'Slow Decay (Fundamentals e.g. SQL, Git)',
-              data: slowDecay,
-              borderColor: '#28a745',
-              backgroundColor: 'transparent',
-              borderWidth: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: { display: true, text: 'Freshness Score (%)' }
-            },
-            x: {
-              title: { display: true, text: 'Year Last Used' }
-            }
+    new Chart(this.timelineChartRef.nativeElement, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'System A (No Decay)',
+            data: years.map(() => 100),
+            borderColor: '#dc2626',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 5]
           },
-          plugins: { legend: { position: 'top' } }
-        }
+          {
+            label: 'Fast (λ=0.3) — Frameworks',
+            data: years.map(y => Math.round(Math.exp(-0.3 * y) * 100)),
+            borderColor: '#e83e8c',
+            backgroundColor: 'transparent',
+            borderWidth: 2
+          },
+          {
+            label: 'Medium (λ=0.2) — Languages',
+            data: years.map(y => Math.round(Math.exp(-0.2 * y) * 100)),
+            borderColor: '#4f46e5',
+            backgroundColor: 'transparent',
+            borderWidth: 2
+          },
+          {
+            label: 'Slow (λ=0.1) — Fundamentals',
+            data: years.map(y => Math.round(Math.exp(-0.1 * y) * 100)),
+            borderColor: '#059669',
+            backgroundColor: 'transparent',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true, max: 100,
+            title: { display: true, text: 'Freshness (%)' }
+          },
+          x: { title: { display: true, text: 'Year Last Used' } }
+        },
+        plugins: { legend: { position: 'top' } }
       }
-    );
-  }
-
-  getScoreColor(score: number): string {
-    if (score >= 0.7) return '#28a745';
-    if (score >= 0.4) return '#2E75B6';
-    if (score >= 0.2) return '#ffc107';
-    return '#dc3545';
-  }
-
-  getDiff(score: number): string {
-    const diff = Math.round((score - 1) * 100);
-    return `${diff}%`;
-  }
-
-  getDiffColor(score: number): string {
-    if (score >= 0.7) return '#28a745';
-    if (score >= 0.4) return '#ffc107';
-    return '#dc3545';
-  }
-
-  getStatusBg(strength: string): string {
-    switch (strength) {
-      case 'Strong': return '#f0fff4';
-      case 'Moderate': return '#f0f4ff';
-      case 'Weak': return '#fffbf0';
-      default: return '#fff5f5';
-    }
-  }
-
-  getStatusColor(strength: string): string {
-    switch (strength) {
-      case 'Strong': return '#28a745';
-      case 'Moderate': return '#2E75B6';
-      case 'Weak': return '#856404';
-      default: return '#dc3545';
-    }
+    });
   }
 }
