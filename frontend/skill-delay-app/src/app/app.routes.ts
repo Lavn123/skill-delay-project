@@ -10,9 +10,6 @@ import { authGuard } from './guards/auth-guard';
 import { ComparisonDashboardComponent } from './components/comparison-dashboard/comparison-dashboard';
 import { EvaluationComponent } from './components/evaluation/evaluation';
 
-
-
-
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
