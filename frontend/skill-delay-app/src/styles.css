@@ -35,19 +35,19 @@
   --border-strong: #c7d2fe;
 
   /* Status Colors */
-  --color-success: #059669;
+  --color-success: #267c62;
   --color-success-bg: #d1fae5;
-  --color-warning: #d97706;
+  --color-warning: #965306;
   --color-warning-bg: #fef3c7;
-  --color-danger: #dc2626;
+  --color-danger: #CD5C5C;
   --color-danger-bg: #fee2e2;
 
   /* Spacing */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-  --radius-full: 100px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-full: 2px;
 
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(79, 70, 229, 0.08);
