@@ -1,6 +1,7 @@
 import math
 from datetime import datetime
 from scipy import stats
+from github_signal import combine_signals
 from decay_model import apply_decay_to_profile, calculate_freshness, get_skill_category
 from job_matcher import extract_required_skills, calculate_match_score
 def get_strength(score):
@@ -36,12 +37,17 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C001",
         "name": "Fresh ML Engineer",
-        "github_username": "chiphuyen",
+        "description": "Recently active in ML — CV and GitHub both confirm",
         "skill_timeline": {
             "python": 2024,
             "tensorflow": 2024,
             "machine learning": 2024,
             "mongodb": 2024,
+            "nlp": 2024
+        },
+        "github_timeline": {
+            "python": 2024,
+            "tensorflow": 2024,
             "nlp": 2024
         },
         "ground_truth": {
@@ -53,7 +59,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C002",
         "name": "Stale ML Engineer",
-        "github_username": "",
+        "description": "ML skills from 2017 — no GitHub activity",
         "skill_timeline": {
             "python": 2017,
             "tensorflow": 2017,
@@ -61,6 +67,7 @@ SYNTHETIC_CANDIDATES = [
             "mongodb": 2017,
             "nlp": 2017
         },
+        "github_timeline": {},
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
@@ -70,11 +77,17 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C003",
         "name": "Fresh Full Stack Developer",
-        "github_username": "bradtraversy",
+        "description": "Recently active in full stack — GitHub confirms",
         "skill_timeline": {
             "angular": 2024,
             "node.js": 2024,
             "mongodb": 2024,
+            "javascript": 2024,
+            "typescript": 2024
+        },
+        "github_timeline": {
+            "angular": 2024,
+            "react": 2024,
             "javascript": 2024,
             "typescript": 2024
         },
@@ -87,7 +100,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C004",
         "name": "Stale Full Stack Developer",
-        "github_username": "",
+        "description": "Full stack skills from 2017 — no GitHub",
         "skill_timeline": {
             "angular": 2017,
             "node.js": 2017,
@@ -95,6 +108,7 @@ SYNTHETIC_CANDIDATES = [
             "javascript": 2017,
             "typescript": 2017
         },
+        "github_timeline": {},
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
@@ -104,13 +118,17 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C005",
         "name": "Mixed Skills Developer",
-        "github_username": "",
+        "description": "Fresh Python but stale Angular — GitHub shows no Angular",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
             "angular": 2017,
             "node.js": 2017,
             "javascript": 2017
+        },
+        "github_timeline": {
+            "python": 2024,
+            "machine learning": 2024
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -121,13 +139,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C006",
         "name": "Career Switcher ML",
-        "github_username": "fastai",
+        "description": "Was Full Stack, switched to ML — GitHub confirms ML focus",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
             "tensorflow": 2024,
             "angular": 2020,
             "javascript": 2020
+        },
+        "github_timeline": {
+            "python": 2024,
+            "tensorflow": 2024,
+            "machine learning": 2024
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -138,12 +161,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C007",
         "name": "Fresh Frontend Specialist",
-        "github_username": "wesbos",
+        "description": "Strong fresh frontend — GitHub confirms React activity",
         "skill_timeline": {
             "react": 2024,
             "javascript": 2024,
             "typescript": 2024,
             "html": 2024,
+            "css": 2024
+        },
+        "github_timeline": {
+            "react": 2024,
+            "javascript": 2024,
+            "typescript": 2024,
             "css": 2024
         },
         "ground_truth": {
@@ -155,13 +184,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C008",
         "name": "Generalist Developer 2022",
-        "github_username": "",
+        "description": "Average skills — GitHub shows continued activity",
         "skill_timeline": {
             "python": 2022,
             "javascript": 2022,
             "angular": 2022,
             "machine learning": 2022,
             "mongodb": 2022
+        },
+        "github_timeline": {
+            "python": 2023,
+            "javascript": 2023,
+            "angular": 2023
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -172,13 +206,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C009",
         "name": "Recently Upskilled Developer",
-        "github_username": "",
+        "description": "Was Java dev, learned ML — GitHub confirms new ML skills",
         "skill_timeline": {
             "java": 2019,
             "python": 2024,
             "machine learning": 2024,
             "tensorflow": 2024,
             "nlp": 2023
+        },
+        "github_timeline": {
+            "python": 2024,
+            "machine learning": 2024,
+            "tensorflow": 2024
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -189,7 +228,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C010",
         "name": "Outdated Full Stack",
-        "github_username": "",
+        "description": "Full stack from 2018 — no GitHub to rescue skills",
         "skill_timeline": {
             "angular": 2018,
             "node.js": 2018,
@@ -197,6 +236,7 @@ SYNTHETIC_CANDIDATES = [
             "mongodb": 2018,
             "typescript": 2018
         },
+        "github_timeline": {},
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
@@ -206,13 +246,19 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C011",
         "name": "Current Full Stack",
-        "github_username": "gothinkster",
+        "description": "Actively using full stack — GitHub confirms 2024",
         "skill_timeline": {
             "angular": 2024,
             "node.js": 2024,
             "javascript": 2024,
             "mongodb": 2024,
             "typescript": 2024
+        },
+        "github_timeline": {
+            "angular": 2024,
+            "javascript": 2024,
+            "typescript": 2024,
+            "node.js": 2024
         },
         "ground_truth": {
             "ML Engineer": False,
@@ -223,13 +269,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C012",
         "name": "Senior Developer Mixed",
-        "github_username": "",
+        "description": "Fresh Python/JS but stale Java — GitHub shows no Java",
         "skill_timeline": {
             "python": 2024,
             "java": 2016,
             "javascript": 2024,
             "machine learning": 2023,
             "angular": 2019
+        },
+        "github_timeline": {
+            "python": 2024,
+            "javascript": 2024,
+            "machine learning": 2023
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -240,13 +291,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C013",
         "name": "Fresh Data Scientist",
-        "github_username": "jakevdp",
+        "description": "Active data science — GitHub confirms Python/ML",
         "skill_timeline": {
             "python": 2024,
             "machine learning": 2024,
             "sql": 2024,
             "pandas": 2024,
             "numpy": 2023
+        },
+        "github_timeline": {
+            "python": 2024,
+            "machine learning": 2024,
+            "pandas": 2024
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -257,7 +313,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C014",
         "name": "Stale Frontend Developer",
-        "github_username": "",
+        "description": "Frontend from 2018 — GitHub shows no recent activity",
         "skill_timeline": {
             "react": 2018,
             "javascript": 2018,
@@ -265,6 +321,7 @@ SYNTHETIC_CANDIDATES = [
             "css": 2018,
             "typescript": 2018
         },
+        "github_timeline": {},
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
@@ -274,13 +331,17 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C015",
         "name": "Moderate Full Stack",
-        "github_username": "",
+        "description": "Full stack from 2021 — GitHub shows some recent activity",
         "skill_timeline": {
             "angular": 2021,
             "node.js": 2021,
             "javascript": 2021,
             "mongodb": 2021,
             "typescript": 2021
+        },
+        "github_timeline": {
+            "javascript": 2023,
+            "typescript": 2022
         },
         "ground_truth": {
             "ML Engineer": False,
@@ -291,13 +352,19 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C016",
         "name": "Career Switcher Frontend",
-        "github_username": "cassidoo",
+        "description": "KEY CASE: CV shows Angular 2020 but GitHub shows Angular 2024",
         "skill_timeline": {
             "python": 2020,
             "java": 2020,
             "react": 2024,
             "javascript": 2024,
             "typescript": 2024
+        },
+        "github_timeline": {
+            "react": 2024,
+            "javascript": 2024,
+            "typescript": 2024,
+            "css": 2024
         },
         "ground_truth": {
             "ML Engineer": False,
@@ -307,31 +374,40 @@ SYNTHETIC_CANDIDATES = [
     },
     {
         "id": "C017",
-        "name": "Fresh Backend Developer",
-        "github_username": "",
+        "name": "Ghost GitHub User",
+        "description": "KEY CASE: Stale CV but GitHub shows active Angular in 2024",
         "skill_timeline": {
-            "python": 2024,
-            "fastapi": 2024,
-            "postgresql": 2024,
-            "docker": 2024,
-            "git": 2024
+            "angular": 2019,
+            "node.js": 2019,
+            "javascript": 2019,
+            "mongodb": 2019
+        },
+        "github_timeline": {
+            "angular": 2024,
+            "javascript": 2024,
+            "typescript": 2024
         },
         "ground_truth": {
             "ML Engineer": False,
-            "Full Stack Developer": False,
-            "Frontend Developer": False
+            "Full Stack Developer": True,
+            "Frontend Developer": True
         }
     },
     {
         "id": "C018",
         "name": "Moderate ML Engineer",
-        "github_username": "",
+        "description": "ML skills from 2022 — GitHub confirms still active",
         "skill_timeline": {
             "python": 2022,
             "tensorflow": 2022,
             "machine learning": 2022,
             "mongodb": 2023,
             "nlp": 2022
+        },
+        "github_timeline": {
+            "python": 2023,
+            "machine learning": 2022,
+            "tensorflow": 2022
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -342,7 +418,7 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C019",
         "name": "Very Stale All Skills",
-        "github_username": "",
+        "description": "All skills from 2016 — no GitHub rescue",
         "skill_timeline": {
             "python": 2016,
             "angular": 2016,
@@ -350,6 +426,7 @@ SYNTHETIC_CANDIDATES = [
             "machine learning": 2016,
             "javascript": 2016
         },
+        "github_timeline": {},
         "ground_truth": {
             "ML Engineer": False,
             "Full Stack Developer": False,
@@ -359,13 +436,18 @@ SYNTHETIC_CANDIDATES = [
     {
         "id": "C020",
         "name": "Balanced Current Developer",
-        "github_username": "nicedoc",
+        "description": "Good mix — GitHub confirms Python and React active",
         "skill_timeline": {
             "python": 2024,
             "javascript": 2024,
             "react": 2024,
             "machine learning": 2023,
             "sql": 2024
+        },
+        "github_timeline": {
+            "python": 2024,
+            "react": 2024,
+            "javascript": 2024
         },
         "ground_truth": {
             "ML Engineer": True,
@@ -374,7 +456,8 @@ SYNTHETIC_CANDIDATES = [
         }
     }
 ]
-# ================================================
+
+# ===============================================
 # JOB DESCRIPTIONS
 # ================================================
 
@@ -438,30 +521,22 @@ def system_b_predict(skill_timeline, job_description):
 # SYSTEM C — ENHANCED DECAY
 # ================================================
 
-def system_c_predict(skill_timeline, job_description, github_username=""):
+def system_c_predict(skill_timeline, job_description, github_timeline=None):
     """
-    System C - Multi source decay with GitHub signals
+    System C - Multi source decay with synthetic GitHub signals
     """
-    from github_signal import extract_github_signals, combine_signals
-    from decay_model import get_skill_category
+    if github_timeline is None:
+        github_timeline = {}
 
-    # Try to get GitHub signals
-    if github_username:
-        try:
-            github_timeline = extract_github_signals(github_username)
-            if github_timeline:
-                combined = combine_signals(skill_timeline, github_timeline)
-                profile = {}
-                for skill, data in combined.items():
-                    profile[skill] = {
-                        "freshness_score": data['final_score'],
-                        "strength": get_strength(data['final_score'])
-                    }
-            else:
-                profile = apply_decay_to_profile(skill_timeline)
-        except Exception as e:
-            print(f"GitHub error: {e}")
-            profile = apply_decay_to_profile(skill_timeline)
+    if github_timeline:
+        combined = combine_signals(skill_timeline, github_timeline)
+        from decay_model import get_skill_category
+        profile = {}
+        for skill, data in combined.items():
+            profile[skill] = {
+                "freshness_score": data['final_score'],
+                "strength": get_strength(data['final_score'])
+            }
     else:
         profile = apply_decay_to_profile(skill_timeline)
 
@@ -496,7 +571,7 @@ def evaluate_system(system_fn, system_name, use_github=False):
                 predicted = system_fn(
                     candidate['skill_timeline'],
                     job['description'],
-                    candidate.get('github_username', '')
+                    candidate.get('github_timeline', {})
                 )
             else:
                 predicted = system_fn(
@@ -708,12 +783,13 @@ if __name__ == "__main__":
     print()
 
     # Run all 3 systems
+   
     result_a = evaluate_system(system_a_predict, "A - Static Baseline")
     result_b = evaluate_system(system_b_predict, "B - CV Decay Only")
     result_c = evaluate_system(
-        system_c_predict,
-        "C - Multi Source (CV + GitHub)",
-        use_github=True  # ← Now uses real GitHub!
+    system_c_predict,
+    "C - Multi Source (CV + GitHub)",
+    use_github=True
     )
 
     # Main results table

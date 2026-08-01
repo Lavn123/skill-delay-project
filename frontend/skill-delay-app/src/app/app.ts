@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth';
+import { ThemeService } from './services/theme';
 import { Router } from '@angular/router';
 
 @Component({
@@ -9,132 +10,111 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
   template: `
-    <nav
-      style="background:linear-gradient(135deg, #1F3864, #2E75B6);
-                padding:15px 40px; display:flex; gap:20px;
-                align-items:center; box-shadow:0 2px 10px rgba(0,0,0,0.2);"
-    >
-      <span
-        style="color:white; font-size:22px; font-weight:bold;
-                   margin-right:20px;"
-      >
-        ⏳ SkillTempus
-      </span>
-      <a
-        routerLink="/"
-        routerLinkActive="active-link"
-        [routerLinkActiveOptions]="{ exact: true }"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-                font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Home
-      </a>
-      <a
-        routerLink="/upload"
-        routerLinkActive="active-link"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-                font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Upload CV
-      </a>
-      <a
-        routerLink="/dashboard"
-        routerLinkActive="active-link"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-                font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Dashboard
-      </a>
-      <a
-        routerLink="/comparison"
-        routerLinkActive="active-link"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-          font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Comparison
-      </a>
-      <a
-        routerLink="/evaluation"
-        routerLinkActive="active-link"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-          font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Research
-      </a>
-      <a
-        routerLink="/jobs"
-        routerLinkActive="active-link"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-                font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        Job Matches
-      </a>
-      <a
-        routerLink="/history"
-        routerLinkActive="active-link"
-        *ngIf="isLoggedIn()"
-        style="color:rgba(255,255,255,0.8); text-decoration:none;
-                font-size:15px; padding:6px 14px; border-radius:20px;"
-      >
-        History
+    <nav class="nav">
+      <a routerLink="/" class="nav-logo">
+        <div class="nav-logo-icon">⏳</div>
+        SkillTempus
       </a>
 
-      <span style="flex:1"></span>
-
-      <div *ngIf="!isLoggedIn()">
+      <div class="nav-links">
         <a
-          routerLink="/login"
-          style="color:rgba(255,255,255,0.8); text-decoration:none;
-                  font-size:15px; padding:6px 14px; border-radius:20px;
-                  margin-right:8px;"
+          routerLink="/"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-link"
+          >Home</a
         >
-          Sign In
-        </a>
-        <a
-          routerLink="/register"
-          style="background:white; color:#1F3864; text-decoration:none;
-                  font-size:14px; padding:8px 18px; border-radius:20px;
-                  font-weight:600;"
+        <a routerLink="/upload" routerLinkActive="active" class="nav-link">Upload CV</a>
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
+        <a routerLink="/jobs" routerLinkActive="active" class="nav-link">Jobs</a>
+        <a routerLink="/comparison" routerLinkActive="active" class="nav-link">Comparison</a>
+        <a routerLink="/evaluation" routerLinkActive="active" class="nav-link">Research</a>
+        <a routerLink="/history" routerLinkActive="active" *ngIf="isLoggedIn()" class="nav-link"
+          >History</a
         >
-          Sign Up
-        </a>
       </div>
 
-      <div *ngIf="isLoggedIn()" style="display:flex; align-items:center; gap:12px;">
-        <span style="color:white; font-size:14px;"> 👋 {{ getUser()?.name }} </span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <!-- Theme Toggle -->
         <button
-          (click)="logout()"
-          style="background:rgba(255,255,255,0.2); color:white;
-                       border:none; padding:8px 16px; border-radius:20px;
-                       cursor:pointer; font-size:14px;"
+          class="theme-toggle"
+          (click)="toggleTheme()"
+          [title]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
         >
-          Logout
+          {{ isDark() ? '☀️' : '🌙' }}
         </button>
+
+        <!-- Not logged in -->
+        <div *ngIf="!isLoggedIn()" style="display:flex; gap:8px;">
+          <a routerLink="/login" class="btn-secondary" style="padding:8px 16px; font-size:13px;">
+            Sign in
+          </a>
+          <a
+            routerLink="/register"
+            class="btn-primary"
+            style="padding:8px 16px; font-size:13px; text-decoration:none;"
+          >
+            Sign up
+          </a>
+        </div>
+
+        <!-- Logged in -->
+        <div *ngIf="isLoggedIn()" style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div
+              style="width:32px; height:32px; border-radius:50%;
+                        background:var(--gradient-primary);
+                        display:flex; align-items:center; justify-content:center;
+                        color:white; font-size:12px; font-weight:600;"
+            >
+              {{ getInitials() }}
+            </div>
+            <span style="font-size:13px; color:var(--text-secondary);">
+              {{ getUser()?.name?.split(' ')[0] }}
+            </span>
+          </div>
+          <button
+            (click)="logout()"
+            class="btn-secondary"
+            style="padding:7px 14px; font-size:12px;"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </nav>
+
     <router-outlet />
   `,
-  styles: [
-    `
-      .active-link {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: white !important;
-      }
-    `,
-  ],
 })
 export class App {
   constructor(
     private authService: AuthService,
+    private themeService: ThemeService,
     private router: Router,
   ) {}
 
   isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
   }
-
   getUser(): any {
     return this.authService.getUser();
+  }
+  isDark(): boolean {
+    return this.themeService.darkMode;
+  }
+  toggleTheme() {
+    this.themeService.toggle();
+  }
+
+  getInitials(): string {
+    const name = this.authService.getUser()?.name || '';
+    return name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   }
 
   logout() {

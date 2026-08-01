@@ -7,112 +7,148 @@ import { RouterLink } from '@angular/router';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #f5f7fa, #e8f0fe);
-                padding:50px 20px;">
-      <div style="max-width:850px; margin:0 auto;">
+    <div style="min-height:100vh; background:var(--gradient-bg); padding:50px 20px;">
+      <div style="max-width:900px; margin:0 auto;">
 
-        <h2 style="color:#1F3864; font-size:32px; margin-bottom:8px;">
-          💼 Job Match Results
-        </h2>
-        <p style="color:#777; margin-bottom:30px;">
-          {{ matches.length }} jobs matched based on your current skill freshness
-        </p>
-
-        <div *ngIf="!matches.length"
-             style="text-align:center; padding:60px; background:white;
-                    border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-          <div style="font-size:50px; margin-bottom:16px;">💼</div>
-          <p style="color:#777; font-size:16px; margin-bottom:20px;">
-            No results yet. Upload your CV first!
+        <!-- Header -->
+        <div class="animate-fade-up" style="margin-bottom:32px;">
+          <h2 style="font-size:32px; font-weight:700; letter-spacing:-0.5px;
+                     color:var(--text-primary); margin-bottom:8px;">
+            💼 Job Match Results
+          </h2>
+          <p style="color:var(--text-secondary); font-size:15px;">
+            {{ matches.length }} roles matched based on your actual skill freshness
           </p>
-          <a routerLink="/upload">
-            <button style="background:linear-gradient(135deg, #2E75B6, #1F3864);
-                           color:white; padding:12px 30px; border:none;
-                           border-radius:25px; cursor:pointer; font-size:15px;">
-              Upload CV →
-            </button>
+        </div>
+
+        <!-- No Data -->
+        <div *ngIf="!matches.length"
+             class="glass-card animate-fade-up"
+             style="padding:60px; text-align:center;">
+          <div style="font-size:50px; margin-bottom:16px;">💼</div>
+          <p style="color:var(--text-secondary); font-size:16px; margin-bottom:20px;">
+            No results yet. Upload your CV to get matched!
+          </p>
+          <a routerLink="/upload" class="btn-primary" style="text-decoration:none;">
+            Upload CV →
           </a>
         </div>
 
+        <!-- Match Cards -->
         <div *ngFor="let job of matches; let i = index"
-             style="background:white; border-radius:16px; padding:24px 28px;
-                    margin-bottom:20px; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+             class="glass-card animate-fade-up"
+             style="padding:28px; margin-bottom:20px;"
+             [style.animation-delay]="i * 0.05 + 's'">
 
-          <!-- Header -->
-          <div style="display:flex; justify-content:space-between; 
-                      align-items:center; margin-bottom:16px;">
+          <!-- Header Row -->
+          <div style="display:flex; justify-content:space-between;
+                      align-items:flex-start; margin-bottom:20px;">
             <div>
-              <span style="background:#f0f4ff; color:#2E75B6; font-size:12px;
-                           padding:3px 10px; border-radius:10px; font-weight:600;">
-                #{{ i + 1 }} Match
-              </span>
-              <h3 style="color:#1F3864; margin:8px 0 4px; font-size:20px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <span style="background:var(--color-primary-light);
+                             color:var(--color-primary); font-size:11px;
+                             padding:3px 10px; border-radius:var(--radius-full);
+                             font-weight:600;">
+                  #{{ i + 1 }} Match
+                </span>
+                <span *ngIf="i === 0"
+                      style="background:var(--color-success-bg);
+                             color:var(--color-success); font-size:11px;
+                             padding:3px 10px; border-radius:var(--radius-full);
+                             font-weight:600;">
+                  ⭐ Best Match
+                </span>
+              </div>
+              <h3 style="font-size:20px; font-weight:700; color:var(--text-primary);
+                         margin:0 0 4px; letter-spacing:-0.3px;">
                 {{ job.job_title }}
               </h3>
-              <p style="color:#777; margin:0; font-size:14px;">
+              <p style="color:var(--text-muted); font-size:13px; margin:0;">
                 {{ job.total_matched }} of {{ job.total_required }} required skills matched
               </p>
             </div>
-            <div style="text-align:center;">
-              <div [style.background]="getScoreGradient(job.match_percentage)"
-                   style="width:70px; height:70px; border-radius:50%;
-                          display:flex; align-items:center; justify-content:center;
-                          color:white; font-size:18px; font-weight:800;
-                          box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-                {{ job.match_percentage }}%
+
+            <!-- Score Circle -->
+            <div style="position:relative; width:72px; height:72px; flex-shrink:0;">
+              <svg width="72" height="72" viewBox="0 0 72 72"
+                   style="transform:rotate(-90deg);">
+                <circle cx="36" cy="36" r="28"
+                        fill="none" stroke="rgba(0,0,0,0.06)"
+                        stroke-width="6"/>
+                <circle cx="36" cy="36" r="28" fill="none"
+                        [attr.stroke]="getScoreColor(job.match_percentage)"
+                        stroke-width="6" stroke-linecap="round"
+                        [attr.stroke-dasharray]="getCircle(job.match_percentage)"/>
+              </svg>
+              <div style="position:absolute; inset:0; display:flex;
+                          align-items:center; justify-content:center;
+                          flex-direction:column;">
+                <span [style.color]="getScoreColor(job.match_percentage)"
+                      style="font-size:15px; font-weight:700; line-height:1;">
+                  {{ job.match_percentage }}%
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Progress bar -->
-          <div style="background:#f0f0f0; border-radius:10px; 
-                      height:8px; overflow:hidden; margin-bottom:16px;">
+          <!-- Progress Bar -->
+          <div style="background:rgba(0,0,0,0.06); border-radius:var(--radius-full);
+                      height:6px; overflow:hidden; margin-bottom:20px;">
             <div [style.width.%]="job.match_percentage"
-                 [style.background]="getScoreGradient(job.match_percentage)"
-                 style="height:100%; border-radius:10px; transition:width 0.5s;">
+                 [style.background]="getScoreColor(job.match_percentage)"
+                 style="height:100%; border-radius:var(--radius-full);
+                        transition:width 1s ease;">
             </div>
           </div>
 
-          <!-- Matched skills -->
-          <div *ngIf="job.matched_skills?.length" style="margin-bottom:12px;">
-            <p style="font-size:13px; font-weight:600; color:#28a745; margin:0 0 8px;">
+          <!-- Matched Skills -->
+          <div *ngIf="job.matched_skills?.length" style="margin-bottom:16px;">
+            <p style="font-size:12px; font-weight:600; color:var(--color-success);
+                      margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;">
               ✅ Matched Skills
             </p>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <span *ngFor="let s of job.matched_skills"
-                    [style.background]="getStrengthBg(s.strength)"
-                    [style.color]="getStrengthColor(s.strength)"
-                    style="padding:5px 12px; border-radius:20px; 
-                           font-size:13px; font-weight:500; border:1px solid;">
-                {{ s.skill }} · {{ (s.freshness * 100).toFixed(0) }}%
-              </span>
+              <div *ngFor="let s of job.matched_skills"
+                   [class]="'badge badge-' + s.strength.toLowerCase()"
+                   style="padding:5px 12px; border-radius:var(--radius-full);
+                          font-size:12px; display:flex; align-items:center; gap:4px;">
+                {{ s.skill }}
+                <span style="opacity:0.7;">· {{ (s.freshness * 100).toFixed(0) }}%</span>
+              </div>
             </div>
           </div>
 
-          <!-- Missing skills -->
-          <div *ngIf="job.missing_skills?.length" style="margin-bottom:12px;">
-            <p style="font-size:13px; font-weight:600; color:#dc3545; margin:0 0 8px;">
+          <!-- Missing Skills -->
+          <div *ngIf="job.missing_skills?.length" style="margin-bottom:16px;">
+            <p style="font-size:12px; font-weight:600; color:var(--color-danger);
+                      margin:0 0 10px; text-transform:uppercase; letter-spacing:0.5px;">
               ❌ Missing Skills
             </p>
             <div style="display:flex; flex-wrap:wrap; gap:8px;">
               <span *ngFor="let s of job.missing_skills"
-                    style="background:#fff5f5; color:#dc3545; padding:5px 12px;
-                           border-radius:20px; font-size:13px; 
-                           border:1px solid #ffcccc;">
+                    style="background:var(--color-danger-bg);
+                           color:var(--color-danger); padding:5px 12px;
+                           border-radius:var(--radius-full); font-size:12px;
+                           font-weight:500;">
                 {{ s }}
               </span>
             </div>
           </div>
 
           <!-- Recommendation -->
-          <div style="background:#f8f9ff; border-radius:10px; padding:12px 16px;
-                      border-left:4px solid #2E75B6;">
-            <p style="margin:0; font-size:14px; color:#555;">
-              💡 <strong>Tip:</strong> {{ getRecommendation(job) }}
+          <div style="background:rgba(79,70,229,0.06);
+                      border-left:3px solid var(--color-primary);
+                      border-radius:0 var(--radius-md) var(--radius-md) 0;
+                      padding:12px 16px;">
+            <p style="margin:0; font-size:13px; color:var(--text-secondary);
+                      line-height:1.6;">
+              💡 <strong style="color:var(--text-primary);">Tip:</strong>
+              {{ getRecommendation(job) }}
             </p>
           </div>
 
         </div>
+
       </div>
     </div>
   `
@@ -127,37 +163,25 @@ export class JobMatchesComponent implements OnInit {
     this.matches = data?.data?.matches || data?.matches || [];
   }
 
-  getScoreGradient(score: number): string {
-    if (score >= 60) return 'linear-gradient(135deg, #28a745, #20c997)';
-    if (score >= 35) return 'linear-gradient(135deg, #ffc107, #fd7e14)';
-    return 'linear-gradient(135deg, #dc3545, #e83e8c)';
+  getScoreColor(score: number): string {
+    if (score >= 60) return '#059669';
+    if (score >= 35) return '#4f46e5';
+    return '#dc2626';
   }
 
-  getStrengthColor(strength: string): string {
-    switch (strength) {
-      case 'Strong': return '#28a745';
-      case 'Moderate': return '#2E75B6';
-      case 'Weak': return '#856404';
-      default: return '#dc3545';
-    }
-  }
-
-  getStrengthBg(strength: string): string {
-    switch (strength) {
-      case 'Strong': return '#f0fff4';
-      case 'Moderate': return '#f0f4ff';
-      case 'Weak': return '#fffbf0';
-      default: return '#fff5f5';
-    }
+  getCircle(score: number): string {
+    const circumference = 2 * Math.PI * 28;
+    const filled = (score / 100) * circumference;
+    return `${filled} ${circumference}`;
   }
 
   getRecommendation(job: any): string {
-    if (job.missing_skills?.length === 0) {
+    if (!job.missing_skills?.length) {
       return 'You meet all requirements — apply with confidence!';
     }
     if (job.match_percentage >= 50) {
       return `Strong match! Brush up on ${job.missing_skills.slice(0, 2).join(', ')} to strengthen your application.`;
     }
-    return `Upskill in ${job.missing_skills.slice(0, 3).join(', ')} to improve your chances for this role.`;
+    return `Upskill in ${job.missing_skills.slice(0, 3).join(', ')} to improve your chances.`;
   }
 }
