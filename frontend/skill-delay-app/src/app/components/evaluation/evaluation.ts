@@ -8,7 +8,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-evaluation',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div style="min-height:100vh; background:var(--gradient-bg); padding:40px 20px;">
       <div style="max-width:1100px; margin:0 auto;">
