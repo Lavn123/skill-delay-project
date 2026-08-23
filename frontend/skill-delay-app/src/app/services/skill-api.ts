@@ -1,23 +1,21 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SkillApiService {
 
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
-  parseCV(cvText: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/parse-cv`, {
-      cv_text: cvText
-    });
+  parseCV(cvText: string) {
+    return this.http.post(`${this.apiUrl}/parse-cv`, { cv_text: cvText });
   }
 
-  matchJobs(cvText: string, githubUsername: string, userId: string = ''): Observable<any> {
+  matchJobs(cvText: string, githubUsername: string = '', userId: string = '') {
     return this.http.post(`${this.apiUrl}/match-jobs`, {
       cv_text: cvText,
       github_username: githubUsername,
@@ -25,20 +23,7 @@ export class SkillApiService {
     });
   }
 
-  getGithubSignal(githubUsername: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/github-signal`, {
-      github_username: githubUsername
-    });
-  }
-
-  evaluate(cvText: string, githubUsername: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/evaluate`, {
-      cv_text: cvText,
-      github_username: githubUsername
-    });
-  }
-
-  uploadCVFile(file: File, githubUsername: string, userId: string = ''): Observable<any> {
+  uploadCVFile(file: File, githubUsername: string = '', userId: string = '') {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('github_username', githubUsername);
@@ -46,9 +31,24 @@ export class SkillApiService {
     return this.http.post(`${this.apiUrl}/upload-cv-file`, formData);
   }
 
-  getUserHistory(): Observable<any> {
+  getGithubSignal(username: string) {
+    return this.http.post(`${this.apiUrl}/github-signal`, {
+      github_username: username
+    });
+  }
+
+  evaluate(cvText: string, githubUsername: string = '') {
+    return this.http.post(`${this.apiUrl}/evaluate`, {
+      cv_text: cvText,
+      github_username: githubUsername
+    });
+  }
+
+  getUserHistory(userId: string) {
     const token = localStorage.getItem('token');
-    const headers = { 'Authorization': `Bearer ${token}` };
-    return this.http.get(`${this.apiUrl}/user/history`, { headers });
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.get(`${this.apiUrl}/user/history/${userId}`, { headers });
   }
 }
