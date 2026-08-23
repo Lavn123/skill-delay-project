@@ -5,7 +5,7 @@
         <div class="animate-fade-up" style="margin-bottom:32px;">
           <h2 style="font-size:32px; font-weight:700; letter-spacing:-0.5px;
                      color:var(--text-primary); margin-bottom:8px;">
-            📊 Skill Freshness Dashboard
+            Dashboard
           </h2>
           <p style="color:var(--text-secondary); font-size:15px;">
             Temporal decay analysis of your skill profile
@@ -137,58 +137,6 @@
               </div>
             </div>
 
-          </div>
-
-          <!-- Decay Chart -->
-          <div class="glass-card animate-fade-up-delay-3"
-               style="padding:24px; margin-bottom:20px;">
-            <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
-                       margin-bottom:6px;">
-              📈 Freshness Score by Skill
-            </h3>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
-              Horizontal bar chart — longer bar = fresher skill
-            </p>
-            <canvas #barChart style="max-height:300px;"></canvas>
-          </div>
-
-          <!-- Full Skill List -->
-          <div class="glass-card animate-fade-up-delay-4" style="padding:24px;">
-            <h3 style="font-size:15px; font-weight:600; color:var(--text-accent);
-                       margin-bottom:20px;">
-              📋 All Skills
-            </h3>
-            <div *ngFor="let s of skills"
-                 style="display:flex; align-items:center; gap:12px;
-                        padding:10px 0; border-bottom:0.5px solid var(--border-default);">
-
-              <span style="font-size:16px;">{{ getSkillIcon(s.category) }}</span>
-
-              <span style="font-size:13px; font-weight:500; color:var(--text-primary);
-                           text-transform:capitalize; width:130px; flex-shrink:0;">
-                {{ s.name }}
-              </span>
-
-              <span style="font-size:11px; color:var(--text-muted);
-                           width:36px; flex-shrink:0;">
-                {{ s.last_used }}
-              </span>
-
-              <div style="flex:1; background:rgba(0,0,0,0.06);
-                          border-radius:var(--radius-full); height:8px; overflow:hidden;">
-                <div [style.width.%]="s.freshness_score * 100"
-                     [class]="'bar-animate bar-' + s.strength.toLowerCase()"
-                     style="height:100%; border-radius:var(--radius-full);
-                            transition:width 0.8s ease;">
-                </div>
-              </div>
-
-              <span [class]="'badge badge-' + s.strength.toLowerCase()"
-                    style="flex-shrink:0;">
-                {{ (s.freshness_score * 100).toFixed(0) }}%
-              </span>
-
-            </div>
           </div>
 
         </div>
