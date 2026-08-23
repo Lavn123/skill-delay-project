@@ -16,10 +16,24 @@ const JWT_SECRET = 'skilltempus_secret_key_2026';
 
 // Middleware
 
+const allowedOrigins = [
+  'http://localhost:4200',
+  'https://skill-delay-project.vercel.app',
+  'https://skilltempus.vercel.app'
+];
+
 app.use(cors({
-    origin: ['https://your-vercel-url.vercel.app', 'http://localhost:4200'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman etc)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 app.use(express.json());
 
