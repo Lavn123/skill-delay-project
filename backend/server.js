@@ -286,6 +286,16 @@ app.get('/api/user/history', async (req, res) => {
   }
 });
 
+// Keep ML service awake on Render free tier
+setInterval(async () => {
+  try {
+    await axios.get(`${ML_SERVICE_URL}/`);
+    console.log('ML service ping successful');
+  } catch (err) {
+    console.log('ML service ping failed:', err.message);
+  }
+}, 10 * 60 * 1000); // Every 10 minutes
+
 // Start server
 app.listen(PORT, () => {
   console.log(`SkillTempus backend running on port ${PORT}`);
